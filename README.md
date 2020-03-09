@@ -1,0 +1,1 @@
+# Bachelor_Degree_2020_Artefact
