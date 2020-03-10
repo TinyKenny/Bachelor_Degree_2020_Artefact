@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(BoxCollider))]
 public class RecordingEndTrigger : MonoBehaviour
 {
 
@@ -22,6 +23,9 @@ public class RecordingEndTrigger : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        recorder?.StopRecording();
+        if (other.CompareTag("Player"))
+        {
+            recorder?.StopRecording();
+        }
     }
 }

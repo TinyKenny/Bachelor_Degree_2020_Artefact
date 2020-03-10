@@ -5,19 +5,12 @@ using UnityEngine;
 [RequireComponent(typeof(BoxCollider))]
 public class WallActivator : MonoBehaviour
 {
-    [SerializeField] private GameObject[] walls;
-    
-
-    private BoxCollider coll;
-    private bool hasActivated = false;
-
-
+    [SerializeField] private GameObject[] walls = null;
 
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player"))
         {
-            Debug.Log("TriggerEntered!");
             SetWallsActive(true);
         }
     }

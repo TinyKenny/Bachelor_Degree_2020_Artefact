@@ -23,6 +23,9 @@ public class RecordingStartTrigger : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        recorder?.StartRecording();
+        if (other.CompareTag("Player"))
+        {
+            recorder?.StartRecording();
+        }
     }
 }
