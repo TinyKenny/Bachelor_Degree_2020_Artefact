@@ -56,6 +56,6 @@ public class PlayerMovement : MonoBehaviour
 
     private void OnControllerColliderHit(ControllerColliderHit hit)
     {
-        Debug.Log("wow.");
+        //Debug.Log("wow.");
     }
 }
