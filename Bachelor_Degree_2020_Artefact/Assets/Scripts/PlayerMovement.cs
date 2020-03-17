@@ -7,7 +7,8 @@ public class PlayerMovement : MonoBehaviour
 {
     [SerializeField] private float movementSpeed = 1.0f;
     [SerializeField] private float gravity = -9.81f;
-
+    [SerializeField] private KeyCode editorSprintKey = KeyCode.LeftShift;
+    [SerializeField] private float editorSprintMult = 3.0f;
     
 
     [SerializeField] private Vector3 inputVector = Vector3.zero;
@@ -43,6 +44,11 @@ public class PlayerMovement : MonoBehaviour
             inputVector = Vector3.ProjectOnPlane(mainCameraTransform.rotation * inputVector, Vector3.up).normalized * inputVector.magnitude;
 
             inputVector = Vector3.ClampMagnitude(inputVector, 1.0f) * movementSpeed;
+
+            if(Application.isEditor && Input.GetKey(editorSprintKey))
+            {
+                inputVector *= editorSprintMult;
+            }
 
             
 
