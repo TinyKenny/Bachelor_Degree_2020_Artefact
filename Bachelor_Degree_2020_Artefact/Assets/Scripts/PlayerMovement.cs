@@ -31,10 +31,10 @@ public class PlayerMovement : MonoBehaviour
         {
             inputVector = new Vector3(Input.GetAxisRaw("Horizontal"), 0.0f, Input.GetAxisRaw("Vertical"));
 
-            //Vector3 topPoint = transform.position + characterController.center + Vector3.up * (characterController.height / 2 - characterController.radius);
-            //Vector3 bottomPoint = transform.position + characterController.center - Vector3.up * (characterController.height / 2 - characterController.radius);
+            //Vector3 topPoint = transform.position + characterController.center + Vector3.up * (characterController.height / 2 - characterController.radius) * 0.95f;
+            //Vector3 bottomPoint = transform.position + characterController.center - Vector3.up * (characterController.height / 2 - characterController.radius) * 0.95f;
 
-            //Physics.CapsuleCast(topPoint, bottomPoint, characterController.radius, Vector3.down, out RaycastHit raycastHit, Mathf.Infinity, ~0, QueryTriggerInteraction.Ignore);
+            //Physics.CapsuleCast(topPoint, bottomPoint, characterController.radius * 0.95f, Vector3.down, out RaycastHit raycastHit, Mathf.Infinity, ~0, QueryTriggerInteraction.Ignore);
 
             //Debug.DrawLine(Vector3.zero, raycastHit.normal, Color.red, 1.0f);
             ////Debug.Log(raycastHit.normal);
