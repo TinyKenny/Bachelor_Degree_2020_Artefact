@@ -29,8 +29,6 @@ public class RecordedDataList
         }
     }
 
-
-
     private RecordedData head;
     private RecordedData tail;
 
@@ -52,6 +50,25 @@ public class RecordedDataList
 
     public void SaveRecordingToFile()
     {
-        Debug.Log("Recording saved to file!");
+        Debug.Log("TODO: Save recording to file!");
+        Debug.Log("TODO: Difference between struc and light?");
+
+        RecordedData currentNode = head;
+
+        if(currentNode == null)
+        {
+            Debug.LogError("Cannot save recodring to file: head node of data recording is null");
+            return;
+        }
+
+        //System.IO.StreamWriter writer = 
+
+        while (currentNode != null)
+        {
+
+
+            currentNode = currentNode.nextData;
+            break; //remove this later
+        }
     }
 }
