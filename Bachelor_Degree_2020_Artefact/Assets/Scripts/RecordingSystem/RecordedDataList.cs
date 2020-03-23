@@ -48,6 +48,14 @@ public class RecordedDataList
     private RecordedData head;
     private RecordedData tail;
 
+    public static NumberFormatInfo GetNumberFormat()
+    {
+        NumberFormatInfo nfi = (NumberFormatInfo)CultureInfo.CurrentCulture.NumberFormat.Clone();
+        nfi.NumberDecimalSeparator = ".";
+        nfi.NumberGroupSeparator = "";
+        return nfi;
+    }
+
     public void RecordData(float cTime, float cPosX, float cPosY, float cPosZ, float cRotX, float cRotY, float cRotZ, float cRotW)
     {
         RecordedData data = new RecordedData(cTime, cPosX, cPosY, cPosZ, cRotX, cRotY, cRotZ, cRotW);
@@ -76,11 +84,9 @@ public class RecordedDataList
             return;
         }
 
-        NumberFormatInfo nfi = (NumberFormatInfo)CultureInfo.CurrentCulture.NumberFormat.Clone();
-        nfi.NumberDecimalSeparator = ".";
-        nfi.NumberGroupSeparator = "";
+        NumberFormatInfo nfi = GetNumberFormat();
 
-        string filepath = Application.persistentDataPath + "/";
+        string filepath = Application.persistentDataPath + "/recording_";
         int fileNumber = 0;
 
         while(File.Exists(filepath + fileNumber.ToString()))
