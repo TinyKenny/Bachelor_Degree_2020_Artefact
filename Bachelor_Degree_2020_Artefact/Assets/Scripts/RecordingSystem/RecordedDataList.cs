@@ -1,6 +1,8 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.IO;
+using System.Globalization;
 
 public class RecordedDataList
 {
@@ -27,6 +29,20 @@ public class RecordedDataList
             rotZ = cRotZ;
             rotW = cRotW;
         }
+
+        public string AsString(NumberFormatInfo nfi)
+        {
+            string ToReturn = "";
+            ToReturn += time.ToString(nfi) + ";";
+            ToReturn += posX.ToString(nfi) + ";";
+            ToReturn += posY.ToString(nfi) + ";";
+            ToReturn += posZ.ToString(nfi) + ";";
+            ToReturn += rotX.ToString(nfi) + ";";
+            ToReturn += rotY.ToString(nfi) + ";";
+            ToReturn += rotZ.ToString(nfi) + ";";
+            ToReturn += rotW.ToString(nfi);
+            return ToReturn;
+        }
     }
 
     private RecordedData head;
@@ -50,7 +66,6 @@ public class RecordedDataList
 
     public void SaveRecordingToFile()
     {
-        Debug.Log("TODO: Save recording to file!");
         Debug.Log("TODO: Difference between struc and light?");
 
         RecordedData currentNode = head;
@@ -61,14 +76,29 @@ public class RecordedDataList
             return;
         }
 
-        //System.IO.StreamWriter writer = 
+        NumberFormatInfo nfi = (NumberFormatInfo)CultureInfo.CurrentCulture.NumberFormat.Clone();
+        nfi.NumberDecimalSeparator = ".";
+        nfi.NumberGroupSeparator = "";
 
-        while (currentNode != null)
+        string filepath = Application.persistentDataPath + "/";
+        int fileNumber = 0;
+
+        while(File.Exists(filepath + fileNumber.ToString()))
         {
-
-
-            currentNode = currentNode.nextData;
-            break; //remove this later
+            fileNumber++;
         }
+        filepath += fileNumber.ToString();
+
+        using (StreamWriter writer = new StreamWriter(filepath))
+        {
+            while (currentNode != null)
+            {
+                writer.WriteLine(currentNode.AsString(nfi));
+
+                currentNode = currentNode.nextData;
+            }
+        }
+
+        Debug.Log("saved to: " + filepath);
     }
 }
