@@ -9,6 +9,7 @@ public class RecordedDataList
     private class RecordedData
     {
         public RecordedData nextData;
+        public readonly RecordedData previousData;
         public readonly float time;
         public readonly float posX;
         public readonly float posY;
@@ -18,8 +19,9 @@ public class RecordedDataList
         public readonly float rotZ;
         public readonly float rotW;
 
-        public RecordedData(float cTime, float cPosX, float cPosY, float cPosZ, float cRotX, float cRotY, float cRotZ, float cRotW)
+        public RecordedData(RecordedData prevData, float cTime, float cPosX, float cPosY, float cPosZ, float cRotX, float cRotY, float cRotZ, float cRotW)
         {
+            previousData = prevData;
             time = cTime;
             posX = cPosX;
             posY = cPosY;
@@ -58,7 +60,7 @@ public class RecordedDataList
 
     public void RecordData(float cTime, float cPosX, float cPosY, float cPosZ, float cRotX, float cRotY, float cRotZ, float cRotW)
     {
-        RecordedData data = new RecordedData(cTime, cPosX, cPosY, cPosZ, cRotX, cRotY, cRotZ, cRotW);
+        RecordedData data = new RecordedData(tail, cTime, cPosX, cPosY, cPosZ, cRotX, cRotY, cRotZ, cRotW);
 
         if(head == null)
         {
