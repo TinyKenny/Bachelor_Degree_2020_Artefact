@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using System;
+//using System;
 
 public class ReplaySystem : MonoBehaviour
 {
@@ -10,6 +10,8 @@ public class ReplaySystem : MonoBehaviour
 
     [HideInInspector]
     [SerializeField] private List<LoadedRecording> loadedRecordings = new List<LoadedRecording>();
+    //[HideInInspector]
+    //[SerializeField] private LoadedRecording soloRecording = null;
 
     void Start()
     {
@@ -29,7 +31,7 @@ public class ReplaySystem : MonoBehaviour
         {
             counter++;
         }
-        loadedRecordings.Add(new LoadedRecording(counter.ToString(), null, null, null));
+        loadedRecordings.Add(new LoadedRecording(this, counter.ToString(), null, null, null));
     }
 
     public void LoadMultipleFiles()
@@ -40,11 +42,20 @@ public class ReplaySystem : MonoBehaviour
     public void UnloadRecording(int index)
     {
         loadedRecordings.RemoveAt(index);
+
+        if(!IsAnyActorSoloVisible())
+        {
+            Debug.Log("Replay system unload recoding: TODO - restore from solo mode!");
+        }
     }
 
     public void GoToPreviousNode()
     {
-        Debug.Log("Replay system: Go to previous node");
+        //Debug.Log("Replay system: Go to previous node");
+        foreach (LoadedRecording recording in loadedRecordings)
+        {
+            recording.GoToPreviousNode();
+        }
     }
 
     public void GoToNextNode()
@@ -81,8 +92,38 @@ public class ReplaySystem : MonoBehaviour
         Debug.Log("Replay system: Go to final node");
     }
 
-    public void HideRecordingByIndex(int index)
+    public bool IsRecordingActorVisible(int index)
     {
-        loadedRecordings[index].HideReplayActor();
+        return loadedRecordings[index].IsVisible();
     }
+
+    public void SetRecordingActorVisibility(int index, bool visibility)
+    {
+        Debug.Log("Replay system: setting visibility should affect solo tag");
+        loadedRecordings[index].SetReplayActorVisibility(visibility);
+    }
+
+    public bool IsRecordingActorSolo(int index)
+    {
+        return loadedRecordings[index].IsSoloVisible();
+    }
+
+    public void SetRecordingActorSolo(int index)
+    {
+
+    }
+
+    public bool IsAnyActorSoloVisible(LoadedRecording excludedRecording = null)
+    {
+        for(int i = 0; i < loadedRecordings.Count; i++)
+        {
+            if(loadedRecordings[i] != excludedRecording && loadedRecordings[i].IsSoloVisible())
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    
 }

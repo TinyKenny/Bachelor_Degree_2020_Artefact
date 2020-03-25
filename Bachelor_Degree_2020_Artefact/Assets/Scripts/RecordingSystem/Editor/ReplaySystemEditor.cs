@@ -11,6 +11,8 @@ public class ReplaySystemEditor : Editor
     private SerializedProperty loadedRecordings;
     private ReorderableList reorderable;
 
+    private static Color32 toggleButtonTextColor = new Color32(0, 88, 133, 255);
+
     private void OnEnable()
     {
         replayer = (ReplaySystem)target;
@@ -28,7 +30,7 @@ public class ReplaySystemEditor : Editor
         if (!Application.isPlaying)
         {
             EditorGUILayout.HelpBox("Replay system controls are only available when the game is playing", MessageType.Info);
-            return;
+            //return;
         }
 
         GUILayout.BeginHorizontal("box");
@@ -109,6 +111,8 @@ public class ReplaySystemEditor : Editor
         GUIStyle elementButtonStyle = new GUIStyle(GUI.skin.button);
         elementButtonStyle.alignment = TextAnchor.MiddleCenter;
         GUIStyle toggledElementButtonStyle = new GUIStyle(elementButtonStyle);
+        toggledElementButtonStyle.normal.textColor = toggleButtonTextColor;
+        toggledElementButtonStyle.active.textColor = toggledElementButtonStyle.normal.textColor;
         float buttonRightPlacementPadding = 3.0f;
 
         float remButtonWidth = 60.0f;
@@ -122,12 +126,31 @@ public class ReplaySystemEditor : Editor
 
 
         float hideButtonWidth = 50.0f;
-        Rect visibleButtonRect = new Rect(remButtonRect.x - hideButtonWidth - buttonRightPlacementPadding * 2,
+        Rect visibilityButtonRect = new Rect(remButtonRect.x - hideButtonWidth - buttonRightPlacementPadding * 2,
                                        remButtonRect.y, hideButtonWidth, remButtonRect.height);
-        if(GUI.Button(visibleButtonRect, "Hide", elementButtonStyle))
+
+        using (new EditorGUI.DisabledScope(false))
         {
-            replayer.HideRecordingByIndex(index);
+            if (replayer.IsRecordingActorVisible(index))
+            {
+                if (GUI.Button(visibilityButtonRect, "Hide", elementButtonStyle))
+                {
+                    replayer.SetRecordingActorVisibility(index, false);
+                }
+            }
+            else
+            {
+                if (GUI.Button(visibilityButtonRect, "Hidden", toggledElementButtonStyle))
+                {
+                    replayer.SetRecordingActorVisibility(index, true);
+                }
+            }
         }
+
+
+
+
+        
 
 
         if (EditorGUI.EndChangeCheck())
