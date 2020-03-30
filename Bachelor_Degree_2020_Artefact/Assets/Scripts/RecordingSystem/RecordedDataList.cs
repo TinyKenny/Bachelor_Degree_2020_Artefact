@@ -6,7 +6,7 @@ using System.Globalization;
 
 public class RecordedDataList
 {
-    private class RecordedData
+    public class RecordedData
     {
         public RecordedData nextData;
         public readonly RecordedData previousData;
@@ -49,6 +49,7 @@ public class RecordedDataList
 
     private RecordedData head;
     private RecordedData tail;
+    private int nodeCount = 0;
 
     public static NumberFormatInfo GetNumberFormat()
     {
@@ -74,6 +75,8 @@ public class RecordedDataList
 
         NumberFormatInfo nfi = GetNumberFormat();
         StreamReader reader = new StreamReader(filepath);
+
+        
 
         float cTime;
         float cPosX;
@@ -118,6 +121,8 @@ public class RecordedDataList
             tail.nextData = data;
             tail = data;
         }
+
+        nodeCount++;
     }
 
     public void SaveRecordingToFile()
@@ -155,5 +160,60 @@ public class RecordedDataList
         }
 
         Debug.Log("saved to: " + filepath);
+    }
+    public int GetNodeCount()
+    {
+        return nodeCount;
+    }
+
+    public float UpdateTransformByNode(Transform transform, int nodeIndex, out int reachedNodeIndex)
+    {
+        RecordedData node = head;
+        reachedNodeIndex = 0;
+        for(int i = 0; i < nodeIndex; i++)
+        {
+            if(node == tail)
+            {
+                Debug.Log("Recorded data list, update transform by node: index out of range, do something");
+                break;
+            }
+            node = node.nextData;
+            reachedNodeIndex = i + 1;
+        }
+
+        transform.position = new Vector3(node.posX, node.posY, node.posZ);
+        transform.rotation = new Quaternion(node.rotX, node.rotY, node.rotZ, node.rotW);
+        return node.time;
+    }
+
+    public RecordedData GetDataByIndex(int nodeIndex)
+    {
+        if(nodeIndex >= nodeCount || nodeIndex < 0)
+        {
+            throw new System.IndexOutOfRangeException();
+        }
+
+        RecordedData node = head;
+        for (int i = 0; i < nodeIndex; i++)
+        {
+            if (node == tail)
+            {
+                Debug.Log("Recorded data list, update transform by node: index out of range, do something");
+                break;
+            }
+            node = node.nextData;
+        }
+
+        return node;
+    }
+
+    public RecordedData GetFirstNode()
+    {
+        return head;
+    }
+
+    public RecordedData GetFinalNode()
+    {
+        return tail;
     }
 }

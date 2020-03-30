@@ -1,21 +1,67 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-//using System;
 
 public class ReplaySystem : MonoBehaviour
 {
+    private abstract class PlayMode
+    {
+        public abstract void HandleUpdate(List<LoadedRecording> loadedRecordings);
+    }
+
+    private class PlaybackMode : PlayMode
+    {
+        private float playDirection;
+
+        public PlaybackMode(bool forward)
+        {
+            playDirection = forward ? 1.0f : -1.0f;
+        }
+
+        public override void HandleUpdate(List<LoadedRecording> loadedRecordings)
+        {
+            float TimeChange = Time.deltaTime * playDirection;
+            foreach (LoadedRecording recording in loadedRecordings)
+            {
+                recording.ChangeTimeBy(TimeChange);
+            }
+        }
+    }
+
+    private class PausedMode : PlayMode
+    {
+        public override void HandleUpdate(List<LoadedRecording> loadedRecordings)
+        {
+
+        }
+    }
+
     [SerializeField] private GameObject replayActorPrefab = null;
     [SerializeField] private Camera replayCamera = null;
 
-    //[HideInInspector]
+    [HideInInspector]
     [SerializeField] private List<LoadedRecording> loadedRecordings = new List<LoadedRecording>();
     [HideInInspector]
     [SerializeField] private List<LoadedRecording> removedRecordings = new List<LoadedRecording>();
     [HideInInspector]
     [SerializeField] private int numberOfSolo = 0;
-    
 
+    private LoadedRecording currentCameraController = null;
+
+    private PlayMode currentMode;
+
+    private PlayMode pausedMode;
+    private PlayMode playingMode;
+    private PlayMode reverseMode;
+
+    private void Awake()
+    {
+        pausedMode = new PausedMode();
+        playingMode = new PlaybackMode(true);
+        reverseMode = new PlaybackMode(false);
+
+        currentMode = pausedMode;
+    }
 
     void Start()
     {
@@ -24,7 +70,7 @@ public class ReplaySystem : MonoBehaviour
 
     void Update()
     {
-        
+        currentMode.HandleUpdate(loadedRecordings);
     }
 
     public void LoadSingleFile(string filepath)
@@ -34,17 +80,13 @@ public class ReplaySystem : MonoBehaviour
             Debug.LogWarning("The selected file is already loaded.");
             return;
         }
+
         RecordedDataList recordedDataList = RecordedDataList.LoadDataFromFile(filepath);
 
         string[] splittedFilePath = filepath.Split('/');
         string recordingName = splittedFilePath[splittedFilePath.Length - 1].Split('.')[0];
 
-        loadedRecordings.Add(new LoadedRecording(this, recordingName, filepath, recordedDataList, replayActorPrefab, replayCamera));
-    }
-
-    public void LoadMultipleFiles()
-    {
-        Debug.Log("Multi-file loading not implemented yet.");
+        loadedRecordings.Add(new LoadedRecording(recordingName, filepath, recordedDataList, replayActorPrefab, replayCamera));
     }
 
     public void RemoveRecording(int index)
@@ -60,6 +102,10 @@ public class ReplaySystem : MonoBehaviour
             {
                 numberOfSolo--;
             }
+            if (removedRecordings[i] == currentCameraController)
+            {
+                currentCameraController = null;
+            }
             loadedRecordings.Remove(removedRecordings[i]);
             removedRecordings[i].DoCleanup();
         }
@@ -68,7 +114,6 @@ public class ReplaySystem : MonoBehaviour
 
     public void GoToPreviousNode()
     {
-        //Debug.Log("Replay system: Go to previous node");
         foreach (LoadedRecording recording in loadedRecordings)
         {
             recording.GoToPreviousNode();
@@ -77,7 +122,6 @@ public class ReplaySystem : MonoBehaviour
 
     public void GoToNextNode()
     {
-        //Debug.Log("Replay system: Go to next node");
         foreach(LoadedRecording recording in loadedRecordings)
         {
             recording.GoToNextNode();
@@ -86,27 +130,38 @@ public class ReplaySystem : MonoBehaviour
 
     public void StartPlayback()
     {
-        Debug.Log("Replay system: Start playback");
+        currentMode = playingMode;
     }
 
     public void StartReversePlayback()
     {
-        Debug.Log("Replay system: Start reverse playback");
+        currentMode = reverseMode;
     }
 
     public void PausePlayback()
     {
-        Debug.Log("Replay system: Pause playback");
+        currentMode = pausedMode;
     }
 
     public void GoToFirstNode()
     {
-        Debug.Log("Replay system: Go to first node");
+        foreach (LoadedRecording recording in loadedRecordings)
+        {
+            recording.GoToFirstNode();
+        }
     }
 
     public void GoToFinalNode()
     {
-        Debug.Log("Replay system: Go to final node");
+        foreach (LoadedRecording recording in loadedRecordings)
+        {
+            recording.GoToFinalNode();
+        }
+    }
+
+    public float GetRecordingTimeByIndex(int index)
+    {
+        return loadedRecordings[index].GetCurrentTime();
     }
 
     public bool IsRecordingActorVisible(int index)
@@ -143,6 +198,25 @@ public class ReplaySystem : MonoBehaviour
         return numberOfSolo > 0;
     }
 
+    public bool IsCameraController(int index)
+    {
+        return loadedRecordings[index] == currentCameraController;
+    }
+
+    public void SetCameraController(int index, bool shouldControlCamera)
+    {
+        currentCameraController?.MakeCameraController(false);
+        if(IsCameraController(index) && !shouldControlCamera)
+        {
+            currentCameraController = null;
+        }
+        else if(!IsCameraController(index) && shouldControlCamera)
+        {
+            currentCameraController = loadedRecordings[index];
+            currentCameraController.MakeCameraController(true);
+        }
+    }
+
     public bool GetActualVisibility(int index)
     {
         return loadedRecordings[index].GetActualVisibility();
@@ -155,14 +229,21 @@ public class ReplaySystem : MonoBehaviour
         {
             loadedRecordings[i].UpdateActorActualVisibility(anyActorSolo);
         }
-        //Debug.Log("actor visibility updated");
     }
 
     /// <summary>
     /// this function exists purely for thesting, and should be removed.
     /// </summary>
-    public void SoloNumberReset()
+    public void ResetValues()
     {
+        foreach(LoadedRecording loaded in loadedRecordings)
+        {
+            removedRecordings.Add(loaded);
+        }
+        UnloadRemovedRecordings();
+        loadedRecordings.Clear();
+        removedRecordings.Clear();
         numberOfSolo = 0;
+        currentCameraController = null;
     }
 }

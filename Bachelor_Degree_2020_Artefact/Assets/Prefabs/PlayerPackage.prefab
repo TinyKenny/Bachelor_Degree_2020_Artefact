@@ -465,7 +465,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c3ca0d639eb1612498b172c32dcc1e38, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  testcounter: 0
+  mazeTime: 0
   startTrigger: {fileID: 8709164819656625705}
   endTrigger: {fileID: 8709164819982958876}
 --- !u!1 &8709164820485619368
@@ -533,4 +533,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   movementSpeed: 3
   gravity: -9.81
+  editorSprintKey: 304
+  editorSprintMult: 3
   inputVector: {x: 0, y: 0, z: 0}

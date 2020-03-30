@@ -6,22 +6,21 @@ using System;
 [Serializable]
 public class LoadedRecording
 {
-    private ReplaySystem owner;
-    /*[SerializeField] */public string name = "Test-text";
+    public string name = "Test-text";
     private string filePath = "";
     private RecordedDataList dataList = null;
     private readonly GameObject replayActorPrefab = null;
     private GameObject replayActor = null;
     private Camera replayCamera = null;
     private Transform controlledTransform = null;
-    private int currentNode = 0;
+    private RecordedDataList.RecordedData currentNode = null;
+    private int currentNodeIndex = 0;
+    private float currentTime = 0.0f;
     private bool visible = true;
     private bool soloMode = false;
-    //private bool currentVisibility = true;
 
-    public LoadedRecording(ReplaySystem ownerSystem, string filename, string path, RecordedDataList recordedData, GameObject actorPrefab, Camera camera)
+    public LoadedRecording(string filename, string path, RecordedDataList recordedData, GameObject actorPrefab, Camera camera)
     {
-        owner = ownerSystem;
         name = filename;
         filePath = path;
         dataList = recordedData;
@@ -30,6 +29,7 @@ public class LoadedRecording
         replayActor.name = "Actor_" + name;
         replayCamera = camera;
         controlledTransform = replayActor.transform;
+        GoToFirstNode();
     }
 
     public void DoCleanup()
@@ -42,14 +42,111 @@ public class LoadedRecording
         return filePath;
     }
 
+    public int GetCurrentNodeIndex()
+    {
+        return currentNodeIndex;
+    }
+
+    public int GetFinalNodeIndex()
+    {
+        return dataList.GetNodeCount() - 1;
+    }
+
     public void GoToNextNode()
     {
-        Debug.Log("Loaded recording: Go to next node");
+        if(currentNode.nextData != null)
+        {
+            currentNode = currentNode.nextData;
+            currentNodeIndex++;
+            UpdateToCurrentNode();
+        }
     }
 
     public void GoToPreviousNode()
     {
-        Debug.Log("Loaded recording: Go to previous node");
+        if(currentNode.previousData != null)
+        {
+            currentNode = currentNode.previousData;
+            currentNodeIndex--;
+            UpdateToCurrentNode();
+        }
+    }
+
+    public void GoToFirstNode()
+    {
+        currentNode = dataList.GetFirstNode();
+        currentNodeIndex = 0;
+        UpdateToCurrentNode();
+    }
+
+    public void GoToFinalNode()
+    {
+        currentNode = dataList.GetFinalNode();
+        currentNodeIndex = GetFinalNodeIndex();
+        UpdateToCurrentNode();
+    }
+
+    public void GoToNodeIndex(int nodeIndex)
+    {
+        currentNode = dataList.GetDataByIndex(nodeIndex);
+        currentNodeIndex = nodeIndex;
+        UpdateToCurrentNode();
+    }
+
+    public float GetCurrentTime()
+    {
+        return currentTime;
+    }
+
+    public void GoToTime(float targetTime)
+    {
+        if (targetTime <= 0.001f)
+        {
+            GoToFirstNode();
+        }
+        else if (targetTime >= dataList.GetFinalNode().time - 0.001f)
+        {
+            GoToFinalNode();
+        }
+        else
+        {
+            while(currentNode.nextData != null && targetTime > currentNode.nextData.time)
+            {
+                currentNode = currentNode.nextData;
+                currentNodeIndex++;
+            }
+            while(currentNode.previousData != null && targetTime < currentNode.time)
+            {
+                currentNode = currentNode.previousData;
+                currentNodeIndex--;
+            }
+
+            if (currentNode.nextData == null)
+            {
+                Debug.LogError("LoadedRecording (" + name + "), GoToTime: target time " + targetTime.ToString() + " reached final node through while-loop");
+                GoToFinalNode();
+            }
+            else
+            {
+
+                float timeBetweenNodes = currentNode.nextData.time - currentNode.time;
+                float targetTimeFromNode = targetTime - currentNode.time;
+                float lerpControl = targetTimeFromNode / timeBetweenNodes;
+
+                controlledTransform.position = Vector3.Lerp(GetNodePosition(currentNode),
+                                                            GetNodePosition(currentNode.nextData),
+                                                            lerpControl);
+                controlledTransform.rotation = Quaternion.Slerp(GetNodeRotation(currentNode),
+                                                                GetNodeRotation(currentNode.nextData),
+                                                                lerpControl);
+                currentTime = targetTime;
+            }
+        }
+    }
+
+    public void ChangeTimeBy(float timeStep)
+    {
+        GoToTime(currentTime + timeStep);
     }
 
     public void SetReplayActorVisibility(bool shouldBeVisible)
@@ -89,13 +186,50 @@ public class LoadedRecording
         }
     }
 
+    public bool IsCameraController()
+    {
+        return controlledTransform == replayCamera.transform;
+    }
+
+    public void MakeCameraController(bool shouldControlCamera)
+    {
+        Transform oldControlledTransform = controlledTransform;
+        if (shouldControlCamera)
+        {
+            controlledTransform = replayCamera.transform;
+        }
+        else
+        {
+            controlledTransform = replayActor.transform;
+        }
+        controlledTransform.position = oldControlledTransform.position;
+        controlledTransform.rotation = oldControlledTransform.rotation;
+    }
+
+    private Vector3 GetNodePosition(RecordedDataList.RecordedData node)
+    {
+        return new Vector3(node.posX, node.posY, node.posZ);
+    }
+
+    private Quaternion GetNodeRotation(RecordedDataList.RecordedData node)
+    {
+        return new Quaternion(node.rotX, node.rotY, node.rotZ, node.rotW);
+    }
+
+    private void UpdateToCurrentNode()
+    {
+        controlledTransform.position = GetNodePosition(currentNode);
+        controlledTransform.rotation = GetNodeRotation(currentNode);
+        currentTime = currentNode.time;
+    }
+
     private void SetActorActualVisibility(bool shouldBeVisible)
     {
-        if (shouldBeVisible && !replayActor.activeSelf)
+        if (shouldBeVisible && !replayActor.activeSelf && !IsCameraController())
         {
             replayActor.SetActive(true);
         }
-        else if(!shouldBeVisible && replayActor.activeSelf)
+        else if((IsCameraController() || !shouldBeVisible) && replayActor.activeSelf)
         {
             replayActor.SetActive(false);
         }

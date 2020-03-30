@@ -19,8 +19,11 @@ public class ReplaySystemEditor : Editor
         loadedRecordings = serializedObject.FindProperty("loadedRecordings");
         reorderable = new ReorderableList(serializedObject, loadedRecordings, false, true, false, false);
 
+        //reorderable.elementHeight = 50.0f;
+
         reorderable.drawHeaderCallback += DrawReplayListHeader;
         reorderable.drawElementCallback += DrawLoadedReplayElement;
+        
     }
 
     public override void OnInspectorGUI()
@@ -33,14 +36,17 @@ public class ReplaySystemEditor : Editor
             //return;
         }
 
-        //if(GUILayout.Button("reset solo number"))
+        //if (GUILayout.Button("element height?"))
         //{
-        //    replayer.SoloNumberReset();
+        //    Debug.Log(reorderable.elementHeight);
         //}
 
-        EditorGUI.BeginChangeCheck();
+        if (GUILayout.Button("Reset recordins list and variables"))
+        {
+            replayer.ResetValues();
+        }
 
-        GUILayout.BeginHorizontal("box");
+        EditorGUI.BeginChangeCheck();
 
         if(GUILayout.Button("Load single file"))
         {
@@ -50,12 +56,6 @@ public class ReplaySystemEditor : Editor
                 replayer.LoadSingleFile(filepath);
             }
         }
-        if (GUILayout.Button("Load multiple files"))
-        {
-            replayer.LoadMultipleFiles();
-        }
-
-        GUILayout.EndHorizontal();
 
         using (new EditorGUI.DisabledScope(loadedRecordings.arraySize <= 0))
         {
@@ -121,11 +121,16 @@ public class ReplaySystemEditor : Editor
     {
         SerializedProperty element = loadedRecordings.GetArrayElementAtIndex(index);
         Rect position = rect;
-        string displayName = element.displayName + (replayer.GetActualVisibility(index) ? " Visible" : " Hidden");
+
+        position.height -= 2.0f;
+
+        string displayName = element.displayName /*+ (replayer.GetActualVisibility(index) ? " Visible" : " Hidden")*/;
         position = EditorGUI.PrefixLabel(position,
                                          GUIUtility.GetControlID(FocusType.Passive),
                                          new GUIContent(displayName));
         //EditorGUI.Toggle(position, false);
+
+
 
         EditorGUI.BeginChangeCheck();
 
@@ -134,9 +139,9 @@ public class ReplaySystemEditor : Editor
         GUIStyle toggledElementButtonStyle = new GUIStyle(elementButtonStyle);
         toggledElementButtonStyle.normal.textColor = toggleButtonTextColor;
         toggledElementButtonStyle.active.textColor = toggledElementButtonStyle.normal.textColor;
-        float buttonRightPlacementPadding = 6.0f;
+        float buttonRightPlacementPadding = 2.0f;
 
-        float remButtonWidth = 60.0f;
+        float remButtonWidth = 53.0f;
         Rect remButtonRect = new Rect(position.x + position.width - remButtonWidth - buttonRightPlacementPadding * 0.5f,
                                       position.y, remButtonWidth, position.height);
         if(GUI.Button(remButtonRect, "Unload", elementButtonStyle))
@@ -168,7 +173,7 @@ public class ReplaySystemEditor : Editor
             }
         }
 
-        float soloButtonWidth = 50.0f;
+        float soloButtonWidth = 40.0f;
         Rect soloButtonRect = new Rect(visibilityButtonRect.x - soloButtonWidth - buttonRightPlacementPadding,
                                        visibilityButtonRect.y, soloButtonWidth, visibilityButtonRect.height);
         if (replayer.IsRecordingActorSolo(index))
@@ -186,8 +191,23 @@ public class ReplaySystemEditor : Editor
             }
         }
 
-
-        
+        float cameraButtonWidth = 57.0f;
+        Rect cameraButtonRect = new Rect(soloButtonRect.x - cameraButtonWidth - buttonRightPlacementPadding,
+                                         soloButtonRect.y, cameraButtonWidth, soloButtonRect.height);
+        if (replayer.IsCameraController(index))
+        {
+            if(GUI.Button(cameraButtonRect, "Camera", toggledElementButtonStyle))
+            {
+                replayer.SetCameraController(index, false);
+            }
+        }
+        else
+        {
+            if(GUI.Button(cameraButtonRect, "Camera", elementButtonStyle))
+            {
+                replayer.SetCameraController(index, true);
+            }
+        }
 
 
         if (EditorGUI.EndChangeCheck())
