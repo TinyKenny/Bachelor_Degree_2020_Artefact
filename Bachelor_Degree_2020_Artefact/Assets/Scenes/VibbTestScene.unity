@@ -722,9 +722,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   replayActorPrefab: {fileID: 8151561165381051679, guid: ae48858fd70846f4fa91bdfda88e260c,
     type: 3}
-  replayCamera: {fileID: 0}
-  loadedRecordings:
-  - name: 0
+  replayCamera: {fileID: 8709164819971382567}
+  loadedRecordings: []
+  removedRecordings: []
+  numberOfSolo: 0
 --- !u!1 &966410074
 GameObject:
   m_ObjectHideFlags: 0
@@ -1952,6 +1953,12 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: ea1b59873a3098c45ac1d207b29a8cb8, type: 3}
+--- !u!20 &8709164819971382567 stripped
+Camera:
+  m_CorrespondingSourceObject: {fileID: 8709164820070270166, guid: ea1b59873a3098c45ac1d207b29a8cb8,
+    type: 3}
+  m_PrefabInstance: {fileID: 8709164819971382566}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &9037372987608281075
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -8,10 +8,14 @@ public class ReplaySystem : MonoBehaviour
     [SerializeField] private GameObject replayActorPrefab = null;
     [SerializeField] private Camera replayCamera = null;
 
-    [HideInInspector]
-    [SerializeField] private List<LoadedRecording> loadedRecordings = new List<LoadedRecording>();
     //[HideInInspector]
-    //[SerializeField] private LoadedRecording soloRecording = null;
+    [SerializeField] private List<LoadedRecording> loadedRecordings = new List<LoadedRecording>();
+    [HideInInspector]
+    [SerializeField] private List<LoadedRecording> removedRecordings = new List<LoadedRecording>();
+    [HideInInspector]
+    [SerializeField] private int numberOfSolo = 0;
+    
+
 
     void Start()
     {
@@ -23,15 +27,19 @@ public class ReplaySystem : MonoBehaviour
         
     }
 
-    public void LoadSingleFile()
+    public void LoadSingleFile(string filepath)
     {
-        Debug.Log("Single-file loading not implemented yet.");
-        int counter = 0;
-        while(loadedRecordings.Exists(element => element.name.Equals(counter.ToString())))
+        if(loadedRecordings.Exists(element => element.GetFilePath() == filepath))
         {
-            counter++;
+            Debug.LogWarning("The selected file is already loaded.");
+            return;
         }
-        loadedRecordings.Add(new LoadedRecording(this, counter.ToString(), null, null, null));
+        RecordedDataList recordedDataList = RecordedDataList.LoadDataFromFile(filepath);
+
+        string[] splittedFilePath = filepath.Split('/');
+        string recordingName = splittedFilePath[splittedFilePath.Length - 1].Split('.')[0];
+
+        loadedRecordings.Add(new LoadedRecording(this, recordingName, filepath, recordedDataList, replayActorPrefab, replayCamera));
     }
 
     public void LoadMultipleFiles()
@@ -39,14 +47,23 @@ public class ReplaySystem : MonoBehaviour
         Debug.Log("Multi-file loading not implemented yet.");
     }
 
-    public void UnloadRecording(int index)
+    public void RemoveRecording(int index)
     {
-        loadedRecordings.RemoveAt(index);
+        removedRecordings.Add(loadedRecordings[index]);
+    }
 
-        if(!IsAnyActorSoloVisible())
+    public void UnloadRemovedRecordings()
+    {
+        for(int i = 0; i < removedRecordings.Count; i++)
         {
-            Debug.Log("Replay system unload recoding: TODO - restore from solo mode!");
+            if (removedRecordings[i].IsSoloVisible())
+            {
+                numberOfSolo--;
+            }
+            loadedRecordings.Remove(removedRecordings[i]);
+            removedRecordings[i].DoCleanup();
         }
+        removedRecordings.Clear();
     }
 
     public void GoToPreviousNode()
@@ -99,7 +116,6 @@ public class ReplaySystem : MonoBehaviour
 
     public void SetRecordingActorVisibility(int index, bool visibility)
     {
-        Debug.Log("Replay system: setting visibility should affect solo tag");
         loadedRecordings[index].SetReplayActorVisibility(visibility);
     }
 
@@ -108,22 +124,45 @@ public class ReplaySystem : MonoBehaviour
         return loadedRecordings[index].IsSoloVisible();
     }
 
-    public void SetRecordingActorSolo(int index)
+    public void SetRecordingActorSolo(int index, bool shouldBeSoloVisible)
     {
-
+        if(IsRecordingActorSolo(index) && !shouldBeSoloVisible)
+        {
+            numberOfSolo--;
+            loadedRecordings[index].MakeReplayActorSoloVisible(shouldBeSoloVisible);
+        }
+        else if(!IsRecordingActorSolo(index) && shouldBeSoloVisible)
+        {
+            numberOfSolo++;
+            loadedRecordings[index].MakeReplayActorSoloVisible(shouldBeSoloVisible);
+        }
     }
 
-    public bool IsAnyActorSoloVisible(LoadedRecording excludedRecording = null)
+    public bool IsAnyActorSoloVisible()
     {
+        return numberOfSolo > 0;
+    }
+
+    public bool GetActualVisibility(int index)
+    {
+        return loadedRecordings[index].GetActualVisibility();
+    }
+
+    public void UpdateActorsActualVisibility()
+    {
+        bool anyActorSolo = IsAnyActorSoloVisible();
         for(int i = 0; i < loadedRecordings.Count; i++)
         {
-            if(loadedRecordings[i] != excludedRecording && loadedRecordings[i].IsSoloVisible())
-            {
-                return true;
-            }
+            loadedRecordings[i].UpdateActorActualVisibility(anyActorSolo);
         }
-        return false;
+        //Debug.Log("actor visibility updated");
     }
 
-    
+    /// <summary>
+    /// this function exists purely for thesting, and should be removed.
+    /// </summary>
+    public void SoloNumberReset()
+    {
+        numberOfSolo = 0;
+    }
 }

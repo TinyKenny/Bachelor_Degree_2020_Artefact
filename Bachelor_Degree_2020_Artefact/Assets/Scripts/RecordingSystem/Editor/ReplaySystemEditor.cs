@@ -33,13 +33,24 @@ public class ReplaySystemEditor : Editor
             //return;
         }
 
+        //if(GUILayout.Button("reset solo number"))
+        //{
+        //    replayer.SoloNumberReset();
+        //}
+
+        EditorGUI.BeginChangeCheck();
+
         GUILayout.BeginHorizontal("box");
 
         if(GUILayout.Button("Load single file"))
         {
-            replayer.LoadSingleFile();
+            string filepath = EditorUtility.OpenFilePanel("Load recorded data", "", RecordedDataList.GetFileExtension());
+            if (filepath.Length > 0)
+            {
+                replayer.LoadSingleFile(filepath);
+            }
         }
-        if(GUILayout.Button("Load multiple files"))
+        if (GUILayout.Button("Load multiple files"))
         {
             replayer.LoadMultipleFiles();
         }
@@ -92,6 +103,13 @@ public class ReplaySystemEditor : Editor
 
         reorderable.DoLayoutList();
         //EditorGUILayout.HelpBox(loadedRecordings.isArray ? "yes" : "no", MessageType.Info);
+        replayer.UnloadRemovedRecordings();
+        replayer.UpdateActorsActualVisibility();
+
+        if (EditorGUI.EndChangeCheck())
+        {
+            EditorUtility.SetDirty(target);
+        }
     }
 
     private void DrawReplayListHeader(Rect rect)
@@ -103,7 +121,10 @@ public class ReplaySystemEditor : Editor
     {
         SerializedProperty element = loadedRecordings.GetArrayElementAtIndex(index);
         Rect position = rect;
-        position = EditorGUI.PrefixLabel(position, GUIUtility.GetControlID(FocusType.Passive), new GUIContent(element.displayName));
+        string displayName = element.displayName + (replayer.GetActualVisibility(index) ? " Visible" : " Hidden");
+        position = EditorGUI.PrefixLabel(position,
+                                         GUIUtility.GetControlID(FocusType.Passive),
+                                         new GUIContent(displayName));
         //EditorGUI.Toggle(position, false);
 
         EditorGUI.BeginChangeCheck();
@@ -113,23 +134,23 @@ public class ReplaySystemEditor : Editor
         GUIStyle toggledElementButtonStyle = new GUIStyle(elementButtonStyle);
         toggledElementButtonStyle.normal.textColor = toggleButtonTextColor;
         toggledElementButtonStyle.active.textColor = toggledElementButtonStyle.normal.textColor;
-        float buttonRightPlacementPadding = 3.0f;
+        float buttonRightPlacementPadding = 6.0f;
 
         float remButtonWidth = 60.0f;
-        Rect remButtonRect = new Rect(position.x + position.width - remButtonWidth - buttonRightPlacementPadding,
+        Rect remButtonRect = new Rect(position.x + position.width - remButtonWidth - buttonRightPlacementPadding * 0.5f,
                                       position.y, remButtonWidth, position.height);
         if(GUI.Button(remButtonRect, "Unload", elementButtonStyle))
         {
-            replayer.UnloadRecording(index);
+            replayer.RemoveRecording(index);
         }
         //position = EditorGUI.PrefixLabel(position, GUIUtility.GetControlID(FocusType.Passive), new GUIContent(element.FindPropertyRelative("name").stringValue));
 
 
         float hideButtonWidth = 50.0f;
-        Rect visibilityButtonRect = new Rect(remButtonRect.x - hideButtonWidth - buttonRightPlacementPadding * 2,
-                                       remButtonRect.y, hideButtonWidth, remButtonRect.height);
+        Rect visibilityButtonRect = new Rect(remButtonRect.x - hideButtonWidth - buttonRightPlacementPadding,
+                                             remButtonRect.y, hideButtonWidth, remButtonRect.height);
 
-        using (new EditorGUI.DisabledScope(false))
+        using (new EditorGUI.DisabledScope(replayer.IsAnyActorSoloVisible()))
         {
             if (replayer.IsRecordingActorVisible(index))
             {
@@ -147,7 +168,23 @@ public class ReplaySystemEditor : Editor
             }
         }
 
-
+        float soloButtonWidth = 50.0f;
+        Rect soloButtonRect = new Rect(visibilityButtonRect.x - soloButtonWidth - buttonRightPlacementPadding,
+                                       visibilityButtonRect.y, soloButtonWidth, visibilityButtonRect.height);
+        if (replayer.IsRecordingActorSolo(index))
+        {
+            if(GUI.Button(soloButtonRect, "Solo", toggledElementButtonStyle))
+            {
+                replayer.SetRecordingActorSolo(index, false);
+            }
+        }
+        else
+        {
+            if(GUI.Button(soloButtonRect, "Solo", elementButtonStyle))
+            {
+                replayer.SetRecordingActorSolo(index, true);
+            }
+        }
 
 
         

@@ -6,31 +6,40 @@ using System;
 [Serializable]
 public class LoadedRecording
 {
-    private enum SoloVisibilityMode
-    {
-        SOLO_VISIBLE,
-        NO_SOLO,
-        HIDDEN_BY_SOLO
-    }
-
     private ReplaySystem owner;
+    /*[SerializeField] */public string name = "Test-text";
+    private string filePath = "";
     private RecordedDataList dataList = null;
+    private readonly GameObject replayActorPrefab = null;
     private GameObject replayActor = null;
     private Camera replayCamera = null;
     private Transform controlledTransform = null;
     private int currentNode = 0;
-    [SerializeField] public string name = "Test-text";
     private bool visible = true;
-    private SoloVisibilityMode soloMode = SoloVisibilityMode.NO_SOLO;
+    private bool soloMode = false;
+    //private bool currentVisibility = true;
 
-    public LoadedRecording(ReplaySystem ownerSystem, string filename, RecordedDataList recordedData, GameObject actor, Camera camera)
+    public LoadedRecording(ReplaySystem ownerSystem, string filename, string path, RecordedDataList recordedData, GameObject actorPrefab, Camera camera)
     {
         owner = ownerSystem;
         name = filename;
+        filePath = path;
         dataList = recordedData;
-        replayActor = actor;
+        replayActorPrefab = actorPrefab;
+        replayActor = GameObject.Instantiate(actorPrefab);
+        replayActor.name = "Actor_" + name;
         replayCamera = camera;
-        //controlledTransform = replayActor.transform;
+        controlledTransform = replayActor.transform;
+    }
+
+    public void DoCleanup()
+    {
+        GameObject.DestroyImmediate(replayActor);
+    }
+
+    public string GetFilePath()
+    {
+        return filePath;
     }
 
     public void GoToNextNode()
@@ -46,8 +55,6 @@ public class LoadedRecording
     public void SetReplayActorVisibility(bool shouldBeVisible)
     {
         visible = shouldBeVisible;
-
-        UpdateActorActualVisibility();
     }
 
     public bool IsVisible()
@@ -57,56 +64,40 @@ public class LoadedRecording
 
     public void MakeReplayActorSoloVisible(bool shouldBeSoloVisible)
     {
-        if (shouldBeSoloVisible)
-        {
-            soloMode = SoloVisibilityMode.SOLO_VISIBLE;
-        }
-        else if(owner.IsAnyActorSoloVisible(this))
-        {
-            soloMode = SoloVisibilityMode.HIDDEN_BY_SOLO;
-        }
-        else
-        {
-            soloMode = SoloVisibilityMode.NO_SOLO;
-        }
-
-        UpdateActorActualVisibility();
-    }
-
-    public void MakeReplayActorHiddenBySolo(bool shouldBeHidden)
-    {
-        if (shouldBeHidden)
-        {
-            if(soloMode == SoloVisibilityMode.SOLO_VISIBLE)
-            {
-                return;
-            }
-            else
-            {
-                soloMode = SoloVisibilityMode.HIDDEN_BY_SOLO;
-            }
-        }
-        else
-        {
-            soloMode = SoloVisibilityMode.NO_SOLO;
-        }
+        soloMode = shouldBeSoloVisible;
     }
 
     public bool IsSoloVisible()
     {
-        return soloMode == SoloVisibilityMode.SOLO_VISIBLE;
+        return soloMode;
     }
 
-    private void UpdateActorActualVisibility()
+    public bool GetActualVisibility()
     {
-        if (soloMode == SoloVisibilityMode.SOLO_VISIBLE
-        || (soloMode == SoloVisibilityMode.NO_SOLO && visible))
+        return replayActor.activeSelf;
+    }
+
+    public void UpdateActorActualVisibility(bool anySolo)
+    {
+        if(IsSoloVisible())
         {
-            Debug.Log("Loaded recording: make actor visible: " + name);
+            SetActorActualVisibility(true);
         }
         else
         {
-            Debug.Log("Loaded recording: make actor hidden: " + name);
+            SetActorActualVisibility(!anySolo && visible);
+        }
+    }
+
+    private void SetActorActualVisibility(bool shouldBeVisible)
+    {
+        if (shouldBeVisible && !replayActor.activeSelf)
+        {
+            replayActor.SetActive(true);
+        }
+        else if(!shouldBeVisible && replayActor.activeSelf)
+        {
+            replayActor.SetActive(false);
         }
     }
 }
