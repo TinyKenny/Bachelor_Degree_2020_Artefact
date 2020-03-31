@@ -89,9 +89,9 @@ public class ReplaySystem : MonoBehaviour
         loadedRecordings.Add(new LoadedRecording(recordingName, filepath, recordedDataList, replayActorPrefab, replayCamera));
     }
 
-    public void RemoveRecording(int index)
+    public void RecordingByIndexRemove(int recordingIndex)
     {
-        removedRecordings.Add(loadedRecordings[index]);
+        removedRecordings.Add(loadedRecordings[recordingIndex]);
     }
 
     public void UnloadRemovedRecordings()
@@ -159,37 +159,71 @@ public class ReplaySystem : MonoBehaviour
         }
     }
 
-    public float GetRecordingTimeByIndex(int index)
+    public void GoToNode(int nodeIndex)
     {
-        return loadedRecordings[index].GetCurrentTime();
+        foreach (LoadedRecording recording in loadedRecordings)
+        {
+            recording.GoToNodeIndex(nodeIndex);
+        }
     }
 
-    public bool IsRecordingActorVisible(int index)
+    public void GoToTime(float targetTime)
     {
-        return loadedRecordings[index].IsVisible();
+        foreach (LoadedRecording recording in loadedRecordings)
+        {
+            recording.GoToTime(targetTime);
+        }
     }
 
-    public void SetRecordingActorVisibility(int index, bool visibility)
+    public void GoToTimePercent(float targetTimePercent)
     {
-        loadedRecordings[index].SetReplayActorVisibility(visibility);
+        foreach (LoadedRecording recording in loadedRecordings)
+        {
+            recording.GoToTimePercent(targetTimePercent);
+        }
     }
 
-    public bool IsRecordingActorSolo(int index)
+    public string RecordingByIndexGetName(int recordingIndex)
     {
-        return loadedRecordings[index].IsSoloVisible();
+        return loadedRecordings[recordingIndex].GetRecordingName();
     }
 
-    public void SetRecordingActorSolo(int index, bool shouldBeSoloVisible)
+    public float RecordingByIndexGetTime(int recordingIndex)
     {
-        if(IsRecordingActorSolo(index) && !shouldBeSoloVisible)
+        return loadedRecordings[recordingIndex].GetCurrentTime();
+    }
+
+    public int RecordingByIndexGetNodeIndex(int recordingIndex)
+    {
+        return loadedRecordings[recordingIndex].GetCurrentNodeIndex();
+    }
+
+    public bool RecordingByIndexIsActorVisible(int recordingIndex)
+    {
+        return loadedRecordings[recordingIndex].IsVisible();
+    }
+
+    public void RecordingByIndexSetActorVisibility(int recordingIndex, bool visibility)
+    {
+        loadedRecordings[recordingIndex].SetReplayActorVisibility(visibility);
+    }
+
+    public bool RecordingByIndexIsActorSolo(int recordingIndex)
+    {
+        return loadedRecordings[recordingIndex].IsSoloVisible();
+    }
+
+    public void RecordingByIndexSetActorSolo(int recordingIndex, bool shouldBeSoloVisible)
+    {
+        if(RecordingByIndexIsActorSolo(recordingIndex) && !shouldBeSoloVisible)
         {
             numberOfSolo--;
-            loadedRecordings[index].MakeReplayActorSoloVisible(shouldBeSoloVisible);
+            loadedRecordings[recordingIndex].MakeReplayActorSoloVisible(shouldBeSoloVisible);
         }
-        else if(!IsRecordingActorSolo(index) && shouldBeSoloVisible)
+        else if(!RecordingByIndexIsActorSolo(recordingIndex) && shouldBeSoloVisible)
         {
             numberOfSolo++;
-            loadedRecordings[index].MakeReplayActorSoloVisible(shouldBeSoloVisible);
+            loadedRecordings[recordingIndex].MakeReplayActorSoloVisible(shouldBeSoloVisible);
         }
     }
 
@@ -198,28 +232,28 @@ public class ReplaySystem : MonoBehaviour
         return numberOfSolo > 0;
     }
 
-    public bool IsCameraController(int index)
+    public bool RecordingByIndexIsCameraController(int recordingIndex)
     {
-        return loadedRecordings[index] == currentCameraController;
+        return loadedRecordings[recordingIndex] == currentCameraController;
     }
 
-    public void SetCameraController(int index, bool shouldControlCamera)
+    public void RecordingByIndexSetCameraController(int recordingIndex, bool shouldControlCamera)
     {
         currentCameraController?.MakeCameraController(false);
-        if(IsCameraController(index) && !shouldControlCamera)
+        if(RecordingByIndexIsCameraController(recordingIndex) && !shouldControlCamera)
         {
             currentCameraController = null;
         }
-        else if(!IsCameraController(index) && shouldControlCamera)
+        else if(!RecordingByIndexIsCameraController(recordingIndex) && shouldControlCamera)
         {
-            currentCameraController = loadedRecordings[index];
+            currentCameraController = loadedRecordings[recordingIndex];
             currentCameraController.MakeCameraController(true);
         }
     }
 
-    public bool GetActualVisibility(int index)
+    public bool RecordingByIndexGetActualVisibility(int recordingIndex)
     {
-        return loadedRecordings[index].GetActualVisibility();
+        return loadedRecordings[recordingIndex].GetActualVisibility();
     }
 
     public void UpdateActorsActualVisibility()

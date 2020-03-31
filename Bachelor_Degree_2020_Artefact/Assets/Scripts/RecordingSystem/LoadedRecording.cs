@@ -6,7 +6,7 @@ using System;
 [Serializable]
 public class LoadedRecording
 {
-    public string name = "Test-text";
+    [SerializeField] private string name = "Test-text";
     private string filePath = "";
     private RecordedDataList dataList = null;
     private readonly GameObject replayActorPrefab = null;
@@ -35,6 +35,11 @@ public class LoadedRecording
     public void DoCleanup()
     {
         GameObject.DestroyImmediate(replayActor);
+    }
+
+    public string GetRecordingName()
+    {
+        return name;
     }
 
     public string GetFilePath()
@@ -88,8 +93,30 @@ public class LoadedRecording
 
     public void GoToNodeIndex(int nodeIndex)
     {
-        currentNode = dataList.GetDataByIndex(nodeIndex);
-        currentNodeIndex = nodeIndex;
+        if(nodeIndex <= 0)
+        {
+            GoToFirstNode();
+            return;
+        }
+        if(nodeIndex >= GetFinalNodeIndex())
+        {
+            GoToFinalNode();
+            return;
+        }
+
+        while (currentNodeIndex < nodeIndex && currentNode.nextData != null)
+        {
+            currentNode = currentNode.nextData;
+            currentNodeIndex++;
+        }
+        while (currentNodeIndex > nodeIndex && currentNode.previousData != null)
+        {
+            currentNode = currentNode.previousData;
+            currentNodeIndex--;
+        }
+        
+        //currentNode = dataList.GetDataByIndex(nodeIndex);
+        //currentNodeIndex = nodeIndex;
         UpdateToCurrentNode();
     }
 
@@ -142,6 +169,11 @@ public class LoadedRecording
                 currentTime = targetTime;
             }
         }
+    }
+
+    public void GoToTimePercent(float targetTimePercent)
+    {
+        GoToTime(targetTimePercent * dataList.GetFinalNode().time);
     }
 
     public void ChangeTimeBy(float timeStep)
