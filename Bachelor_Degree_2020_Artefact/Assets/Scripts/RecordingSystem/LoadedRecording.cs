@@ -9,6 +9,7 @@ public class LoadedRecording
     [SerializeField] private string name = "Test-text";
     private string filePath = "";
     private RecordedDataList dataList = null;
+
     private readonly GameObject replayActorPrefab = null;
     private GameObject replayActor = null;
     private Camera replayCamera = null;
@@ -19,7 +20,10 @@ public class LoadedRecording
     private bool visible = true;
     private bool soloMode = false;
 
-    public LoadedRecording(string filename, string path, RecordedDataList recordedData, GameObject actorPrefab, Camera camera)
+    private readonly GameObject heatmapObjectPrefab = null;
+    private GameObject heatmapParent = null;
+
+    public LoadedRecording(string filename, string path, RecordedDataList recordedData, GameObject heatmapMarkerPrefab, GameObject actorPrefab, Camera camera)
     {
         name = filename;
         filePath = path;
@@ -30,11 +34,15 @@ public class LoadedRecording
         replayCamera = camera;
         controlledTransform = replayActor.transform;
         GoToFirstNode();
+
+        heatmapObjectPrefab = heatmapMarkerPrefab;
+        heatmapParent = new GameObject();
     }
 
     public void DoCleanup()
     {
         GameObject.DestroyImmediate(replayActor);
+        GameObject.DestroyImmediate(heatmapParent);
     }
 
     public string GetRecordingName()
@@ -206,15 +214,15 @@ public class LoadedRecording
         return replayActor.activeSelf;
     }
 
-    public void UpdateActorActualVisibility(bool anySolo)
+    public void UpdateActorActualVisibility(bool anySolo, bool displayReplayMode)
     {
         if(IsSoloVisible())
         {
-            SetActorActualVisibility(true);
+            SetActorActualVisibility(true, displayReplayMode);
         }
         else
         {
-            SetActorActualVisibility(!anySolo && visible);
+            SetActorActualVisibility(!anySolo && visible, displayReplayMode);
         }
     }
 
@@ -255,15 +263,28 @@ public class LoadedRecording
         currentTime = currentNode.time;
     }
 
-    private void SetActorActualVisibility(bool shouldBeVisible)
+    public void HideHeatmap()
     {
-        if (shouldBeVisible && !replayActor.activeSelf && !IsCameraController())
+        heatmapParent.SetActive(false);
+    }
+
+    private void SetActorActualVisibility(bool shouldBeVisible, bool displayReplayMode)
+    {
+        if (displayReplayMode)
         {
-            replayActor.SetActive(true);
+            if (shouldBeVisible && !replayActor.activeSelf && !IsCameraController())
+            {
+                replayActor.SetActive(true);
+            }
+            else if ((IsCameraController() || !shouldBeVisible) && replayActor.activeSelf)
+            {
+                replayActor.SetActive(false);
+            }
         }
-        else if((IsCameraController() || !shouldBeVisible) && replayActor.activeSelf)
+        else
         {
             replayActor.SetActive(false);
+            heatmapParent.SetActive(shouldBeVisible);
         }
     }
 }

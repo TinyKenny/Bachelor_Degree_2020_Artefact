@@ -720,6 +720,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c424831f9b665fb4d93354b4fa6d8052, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  heatmapMarkerPrefab: {fileID: 8696779622909085700, guid: 61aca3d2916deef458872bfa6bda0b33,
+    type: 3}
   replayActorPrefab: {fileID: 8151561165381051679, guid: ae48858fd70846f4fa91bdfda88e260c,
     type: 3}
   replayCamera: {fileID: 8709164819971382567}

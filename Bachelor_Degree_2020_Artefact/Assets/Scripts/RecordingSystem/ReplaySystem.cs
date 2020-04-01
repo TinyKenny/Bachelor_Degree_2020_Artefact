@@ -36,6 +36,13 @@ public class ReplaySystem : MonoBehaviour
         }
     }
 
+    private enum DisplayMode
+    {
+        REPLAY,
+        HEATMAP
+    }
+
+    [SerializeField] private GameObject heatmapMarkerPrefab = null;
     [SerializeField] private GameObject replayActorPrefab = null;
     [SerializeField] private Camera replayCamera = null;
 
@@ -46,9 +53,11 @@ public class ReplaySystem : MonoBehaviour
     [HideInInspector]
     [SerializeField] private int numberOfSolo = 0;
 
+    private DisplayMode currentDisplayMode = DisplayMode.REPLAY;
+
     private LoadedRecording currentCameraController = null;
 
-    private PlayMode currentMode;
+    private PlayMode currentPlayMode;
 
     private PlayMode pausedMode;
     private PlayMode playingMode;
@@ -56,11 +65,18 @@ public class ReplaySystem : MonoBehaviour
 
     private void Awake()
     {
-        pausedMode = new PausedMode();
-        playingMode = new PlaybackMode(true);
-        reverseMode = new PlaybackMode(false);
+        if (Application.isEditor)
+        {
+            pausedMode = new PausedMode();
+            playingMode = new PlaybackMode(true);
+            reverseMode = new PlaybackMode(false);
 
-        currentMode = pausedMode;
+            currentPlayMode = pausedMode;
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
     void Start()
@@ -70,7 +86,10 @@ public class ReplaySystem : MonoBehaviour
 
     void Update()
     {
-        currentMode.HandleUpdate(loadedRecordings);
+        if (IsReplayDisplayMode())
+        {
+            currentPlayMode.HandleUpdate(loadedRecordings);
+        }
     }
 
     public void LoadSingleFile(string filepath)
@@ -86,7 +105,7 @@ public class ReplaySystem : MonoBehaviour
         string[] splittedFilePath = filepath.Split('/');
         string recordingName = splittedFilePath[splittedFilePath.Length - 1].Split('.')[0];
 
-        loadedRecordings.Add(new LoadedRecording(recordingName, filepath, recordedDataList, replayActorPrefab, replayCamera));
+        loadedRecordings.Add(new LoadedRecording(recordingName, filepath, recordedDataList, heatmapMarkerPrefab, replayActorPrefab, replayCamera));
     }
 
     public void RecordingByIndexRemove(int recordingIndex)
@@ -94,8 +113,10 @@ public class ReplaySystem : MonoBehaviour
         removedRecordings.Add(loadedRecordings[recordingIndex]);
     }
 
-    public void UnloadRemovedRecordings()
+    public bool UnloadRemovedRecordings()
     {
+        int countBeforeRemove = loadedRecordings.Count;
+
         for(int i = 0; i < removedRecordings.Count; i++)
         {
             if (removedRecordings[i].IsSoloVisible())
@@ -110,6 +131,8 @@ public class ReplaySystem : MonoBehaviour
             removedRecordings[i].DoCleanup();
         }
         removedRecordings.Clear();
+
+        return countBeforeRemove != loadedRecordings.Count;
     }
 
     public void GoToPreviousNode()
@@ -130,17 +153,17 @@ public class ReplaySystem : MonoBehaviour
 
     public void StartPlayback()
     {
-        currentMode = playingMode;
+        currentPlayMode = playingMode;
     }
 
     public void StartReversePlayback()
     {
-        currentMode = reverseMode;
+        currentPlayMode = reverseMode;
     }
 
     public void PausePlayback()
     {
-        currentMode = pausedMode;
+        currentPlayMode = pausedMode;
     }
 
     public void GoToFirstNode()
@@ -261,9 +284,45 @@ public class ReplaySystem : MonoBehaviour
         bool anyActorSolo = IsAnyActorSoloVisible();
         for(int i = 0; i < loadedRecordings.Count; i++)
         {
-            loadedRecordings[i].UpdateActorActualVisibility(anyActorSolo);
+            loadedRecordings[i].UpdateActorActualVisibility(anyActorSolo, IsReplayDisplayMode());
         }
     }
+
+    public int GetCurrentDisplayMode()
+    {
+        return (int)currentDisplayMode;
+    }
+
+    public void SetCurrentDisplayMode(int desiredDisplayMode)
+    {
+        DisplayMode desired = (DisplayMode)desiredDisplayMode;
+        if (currentDisplayMode != desired)
+        {
+            if(currentDisplayMode == DisplayMode.HEATMAP)
+            {
+                foreach(LoadedRecording recording in loadedRecordings)
+                {
+                    recording.HideHeatmap();
+                }
+            }
+            Debug.Log("replay system: display mode changed, do stuff");
+            currentDisplayMode = desired;
+            UpdateActorsActualVisibility();
+        }
+    }
+
+    public bool IsReplayDisplayMode()
+    {
+        return currentDisplayMode == DisplayMode.REPLAY;
+    }
+
+    public bool IsHeatmapDisplayMode()
+    {
+        return currentDisplayMode == DisplayMode.HEATMAP;
+    }
+
+
+
 
     /// <summary>
     /// this function exists purely for thesting, and should be removed.

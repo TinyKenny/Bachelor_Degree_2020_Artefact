@@ -8,6 +8,10 @@ using UnityEditorInternal;
 public class ReplaySystemEditor : Editor
 {
     private ReplaySystem replayer = null;
+    private bool shouldUpdateVisibility = false;
+
+    private string[] toolbarNames = null;
+
     private SerializedProperty loadedRecordings;
     private ReorderableList reorderable;
     private int selectionIndexChangeByRemove = 0;
@@ -32,6 +36,10 @@ public class ReplaySystemEditor : Editor
     private void OnEnable()
     {
         replayer = (ReplaySystem)target;
+        shouldUpdateVisibility = false;
+
+        toolbarNames = new string[] { "Replay", "Heatmap" };
+
         loadedRecordings = serializedObject.FindProperty("loadedRecordings");
         reorderable = new ReorderableList(serializedObject, loadedRecordings, false, true, false, false);
 
@@ -99,181 +107,203 @@ public class ReplaySystemEditor : Editor
                 if (filepath.Length > 0)
                 {
                     replayer.LoadSingleFile(filepath);
+                    shouldUpdateVisibility = true;
                 }
             }
+
 
             using (new EditorGUI.DisabledScope(loadedRecordings.arraySize <= 0))
             {
                 GUILayout.BeginVertical("box");
-                GUILayout.BeginVertical("box");
 
-                displayControlsForAll = EditorGUILayout.BeginToggleGroup("Controls for all loaded recordings", displayControlsForAll);
-                EditorGUILayout.EndToggleGroup();
+                replayer.SetCurrentDisplayMode(GUILayout.Toolbar(replayer.GetCurrentDisplayMode(), toolbarNames));
 
-                if (displayControlsForAll)
+                if (replayer.IsReplayDisplayMode())
                 {
-                    GUILayout.BeginHorizontal();
+                    GUILayout.BeginVertical("box");
 
-                    if (GUILayout.Button("Previous node"))
-                    {
-                        replayer.GoToPreviousNode();
-                    }
-                    if (GUILayout.Button("Reverse"))
-                    {
-                        replayer.StartReversePlayback();
-                    }
-                    if (GUILayout.Button("Pause"))
-                    {
-                        replayer.PausePlayback();
-                    }
-                    if (GUILayout.Button("Play"))
-                    {
-                        replayer.StartPlayback();
-                    }
-                    if (GUILayout.Button("Next node"))
-                    {
-                        replayer.GoToNextNode();
-                    }
-                    GUILayout.EndHorizontal();
+                    displayControlsForAll = EditorGUILayout.BeginToggleGroup("Controls for all loaded recordings", displayControlsForAll);
+                    EditorGUILayout.EndToggleGroup();
 
-                    GUILayout.BeginHorizontal();
-                    if (GUILayout.Button("Jump to first node"))
-                    {
-                        replayer.GoToFirstNode();
-                    }
-                    if (GUILayout.Button("Jump to final node"))
-                    {
-                        replayer.GoToFinalNode();
-                    }
-                    GUILayout.EndHorizontal();
-
-                    GUILayout.BeginVertical();
-
-                    GUILayout.BeginHorizontal();
-                    if (GUILayout.Button("Jump to node"))
-                    {
-                        replayer.GoToNode(targetNodeIndexAllRecordings);
-                    }
-                    targetNodeIndexAllRecordings = EditorGUILayout.IntField(targetNodeIndexAllRecordings);
-                    GUILayout.EndHorizontal();
-
-                    GUILayout.BeginHorizontal();
-                    if (GUILayout.Button("Jump to time"))
-                    {
-                        replayer.GoToTime(targetTimeAllRecordings);
-                    }
-                    targetTimeAllRecordings = EditorGUILayout.FloatField(targetTimeAllRecordings);
-                    GUILayout.EndHorizontal();
-
-                    GUILayout.BeginHorizontal();
-                    if (GUILayout.Button("Jump to time %"))
-                    {
-                        replayer.GoToTimePercent(targetTimePercentAllRecordings);
-                    }
-                    targetTimePercentAllRecordings = EditorGUILayout.Slider(targetTimePercentAllRecordings, 0.0f, 1.0f);
-                    GUILayout.EndHorizontal();
-
-                    GUILayout.EndVertical();
-                }
-
-                GUILayout.EndVertical();
-
-
-                GUILayout.BeginVertical("box");
-
-                displayControlsForSelected = EditorGUILayout.BeginToggleGroup("Controls for selected recording", displayControlsForSelected);
-                EditorGUILayout.EndToggleGroup();
-
-                if (displayControlsForSelected)
-                {
-                    if (reorderable.index < 0)
-                    {
-                        GUILayout.Label("Selected: None");
-                    }
-                    else
-                    {
-                        string toPrint = "Selected: ";
-
-                        toPrint += replayer.RecordingByIndexGetName(reorderable.index);
-                        toPrint += " (T = " + replayer.RecordingByIndexGetTime(reorderable.index).ToString();
-                        toPrint += " N = " + replayer.RecordingByIndexGetNodeIndex(reorderable.index).ToString();
-                        toPrint += ")";
-
-                        GUILayout.Label(toPrint);
-                    }
-
-                    //GUILayout.Label(reorderable.index.ToString());
-
-                    using (new EditorGUI.DisabledScope(reorderable.index < 0))
+                    if (displayControlsForAll)
                     {
                         GUILayout.BeginHorizontal();
-                        if (GUILayout.Button("Previous node", notImplementedButtonStyle))
+
+                        if (GUILayout.Button("Previous node"))
                         {
-                            Debug.Log("Replay System Editor, Selected recording: previous node");
+                            replayer.GoToPreviousNode();
                         }
-                        if (GUILayout.Button("Reverse", notImplementedButtonStyle))
+                        if (GUILayout.Button("Reverse"))
                         {
-                            Debug.Log("Replay System Editor, Selected recording: reverse");
+                            replayer.StartReversePlayback();
                         }
-                        if (GUILayout.Button("Pause", notImplementedButtonStyle))
+                        if (GUILayout.Button("Pause"))
                         {
-                            Debug.Log("Replay System Editor, Selected recording: pause");
+                            replayer.PausePlayback();
                         }
-                        if (GUILayout.Button("Play", notImplementedButtonStyle))
+                        if (GUILayout.Button("Play"))
                         {
-                            Debug.Log("Replay System Editor, Selected recording: play");
+                            replayer.StartPlayback();
                         }
-                        if(GUILayout.Button("Next node", notImplementedButtonStyle))
+                        if (GUILayout.Button("Next node"))
                         {
-                            Debug.Log("Replay System Editor, Selected recording: next node");
+                            replayer.GoToNextNode();
                         }
                         GUILayout.EndHorizontal();
 
                         GUILayout.BeginHorizontal();
-                        if (GUILayout.Button("Jump to first node", notImplementedButtonStyle))
+                        if (GUILayout.Button("Jump to first node"))
                         {
-                            Debug.Log("Replay System Editor, Selected recording: jump to first node");
+                            replayer.GoToFirstNode();
                         }
-                        if(GUILayout.Button("Jump to final node", notImplementedButtonStyle))
+                        if (GUILayout.Button("Jump to final node"))
                         {
-                            Debug.Log("Replay System Editor, Selected recording: jump to final node");
+                            replayer.GoToFinalNode();
                         }
                         GUILayout.EndHorizontal();
 
                         GUILayout.BeginVertical();
 
                         GUILayout.BeginHorizontal();
-                        if (GUILayout.Button("Jump to node", notImplementedButtonStyle))
+                        if (GUILayout.Button("Jump to node"))
                         {
-                            //replayer.GoToNode(targetNodeIndexSelectedRecording);
-                            Debug.Log("Replay System Editor, Selected recording: jump to node");
+                            replayer.GoToNode(targetNodeIndexAllRecordings);
                         }
-                        targetNodeIndexSelectedRecording = EditorGUILayout.IntField(targetNodeIndexSelectedRecording);
+                        targetNodeIndexAllRecordings = EditorGUILayout.IntField(targetNodeIndexAllRecordings);
                         GUILayout.EndHorizontal();
 
                         GUILayout.BeginHorizontal();
-                        if (GUILayout.Button("Jump to time", notImplementedButtonStyle))
+                        if (GUILayout.Button("Jump to time"))
                         {
-                            //replayer.GoToTime(targetTimeAllRecordings);
-                            Debug.Log("Replay System Editor, Selected recording: jump to time");
+                            replayer.GoToTime(targetTimeAllRecordings);
                         }
-                        targetTimeSelectedRecording = EditorGUILayout.FloatField(targetTimeSelectedRecording);
+                        targetTimeAllRecordings = EditorGUILayout.FloatField(targetTimeAllRecordings);
                         GUILayout.EndHorizontal();
 
                         GUILayout.BeginHorizontal();
-                        if (GUILayout.Button("Jump to time %", notImplementedButtonStyle))
+                        if (GUILayout.Button("Jump to time %"))
                         {
-                            //replayer.GoToTimePercent(targetTimePercentAllRecordings);
-                            Debug.Log("Replay System Editor, Selected recording: jump to time percent");
+                            replayer.GoToTimePercent(targetTimePercentAllRecordings);
                         }
-                        targetTimePercentSelectedRecording = EditorGUILayout.Slider(targetTimePercentSelectedRecording, 0.0f, 1.0f);
+                        targetTimePercentAllRecordings = EditorGUILayout.Slider(targetTimePercentAllRecordings, 0.0f, 1.0f);
                         GUILayout.EndHorizontal();
 
                         GUILayout.EndVertical();
                     }
+
+                    GUILayout.EndVertical();
+
+
+                    GUILayout.BeginVertical("box");
+
+                    displayControlsForSelected = EditorGUILayout.BeginToggleGroup("Controls for selected recording", displayControlsForSelected);
+                    EditorGUILayout.EndToggleGroup();
+
+                    if (displayControlsForSelected)
+                    {
+                        if (reorderable.index < 0)
+                        {
+                            GUILayout.Label("Selected: None");
+                        }
+                        else
+                        {
+                            string toPrint = "Selected: ";
+
+                            toPrint += replayer.RecordingByIndexGetName(reorderable.index);
+                            toPrint += " (T = " + replayer.RecordingByIndexGetTime(reorderable.index).ToString();
+                            toPrint += " N = " + replayer.RecordingByIndexGetNodeIndex(reorderable.index).ToString();
+                            toPrint += ")";
+
+                            GUILayout.Label(toPrint);
+                        }
+
+                        //GUILayout.Label(reorderable.index.ToString());
+
+                        using (new EditorGUI.DisabledScope(reorderable.index < 0))
+                        {
+                            GUILayout.BeginHorizontal();
+                            if (GUILayout.Button("Previous node", notImplementedButtonStyle))
+                            {
+                                Debug.Log("Replay System Editor, Selected recording: previous node");
+                            }
+                            if (GUILayout.Button("Reverse", notImplementedButtonStyle))
+                            {
+                                Debug.Log("Replay System Editor, Selected recording: reverse");
+                            }
+                            if (GUILayout.Button("Pause", notImplementedButtonStyle))
+                            {
+                                Debug.Log("Replay System Editor, Selected recording: pause");
+                            }
+                            if (GUILayout.Button("Play", notImplementedButtonStyle))
+                            {
+                                Debug.Log("Replay System Editor, Selected recording: play");
+                            }
+                            if (GUILayout.Button("Next node", notImplementedButtonStyle))
+                            {
+                                Debug.Log("Replay System Editor, Selected recording: next node");
+                            }
+                            GUILayout.EndHorizontal();
+
+                            GUILayout.BeginHorizontal();
+                            if (GUILayout.Button("Jump to first node", notImplementedButtonStyle))
+                            {
+                                Debug.Log("Replay System Editor, Selected recording: jump to first node");
+                            }
+                            if (GUILayout.Button("Jump to final node", notImplementedButtonStyle))
+                            {
+                                Debug.Log("Replay System Editor, Selected recording: jump to final node");
+                            }
+                            GUILayout.EndHorizontal();
+
+                            GUILayout.BeginVertical();
+
+                            GUILayout.BeginHorizontal();
+                            if (GUILayout.Button("Jump to node", notImplementedButtonStyle))
+                            {
+                                //replayer.GoToNode(targetNodeIndexSelectedRecording);
+                                Debug.Log("Replay System Editor, Selected recording: jump to node");
+                            }
+                            targetNodeIndexSelectedRecording = EditorGUILayout.IntField(targetNodeIndexSelectedRecording);
+                            GUILayout.EndHorizontal();
+
+                            GUILayout.BeginHorizontal();
+                            if (GUILayout.Button("Jump to time", notImplementedButtonStyle))
+                            {
+                                //replayer.GoToTime(targetTimeAllRecordings);
+                                Debug.Log("Replay System Editor, Selected recording: jump to time");
+                            }
+                            targetTimeSelectedRecording = EditorGUILayout.FloatField(targetTimeSelectedRecording);
+                            GUILayout.EndHorizontal();
+
+                            GUILayout.BeginHorizontal();
+                            if (GUILayout.Button("Jump to time %", notImplementedButtonStyle))
+                            {
+                                //replayer.GoToTimePercent(targetTimePercentAllRecordings);
+                                Debug.Log("Replay System Editor, Selected recording: jump to time percent");
+                            }
+                            targetTimePercentSelectedRecording = EditorGUILayout.Slider(targetTimePercentSelectedRecording, 0.0f, 1.0f);
+                            GUILayout.EndHorizontal();
+
+                            GUILayout.EndVertical();
+                        }
+                    }
+
+                    GUILayout.EndVertical();
+                }
+                else if (replayer.IsHeatmapDisplayMode())
+                {
+                    GUILayout.BeginVertical("box");
+
+                    EditorGUILayout.HelpBox("Heatmap mode, aww yeah!", MessageType.Info);
+
+                    if(GUILayout.Button(new GUIContent("Generate new heatmap")))
+                    {
+
+                    }
+
+                    GUILayout.EndVertical();
                 }
 
-                GUILayout.EndVertical();
 
                 GUILayout.EndVertical();
             }
@@ -284,13 +314,19 @@ public class ReplaySystemEditor : Editor
 
         reorderable.DoLayoutList();
         //EditorGUILayout.HelpBox(loadedRecordings.isArray ? "yes" : "no", MessageType.Info);
-        replayer.UnloadRemovedRecordings();
+        shouldUpdateVisibility = shouldUpdateVisibility || replayer.UnloadRemovedRecordings();
+
         if (reorderable.index > -1)
         {
             reorderable.index -= selectionIndexChangeByRemove;
         }
         selectionIndexChangeByRemove = 0;
-        replayer.UpdateActorsActualVisibility();
+
+        if (shouldUpdateVisibility)
+        {
+            replayer.UpdateActorsActualVisibility();
+        }
+        shouldUpdateVisibility = false;
 
         if (EditorGUI.EndChangeCheck())
         {
@@ -321,6 +357,7 @@ public class ReplaySystemEditor : Editor
         Rect position = rect;
 
         position.height -= 2.0f;
+
 
         string displayName = element.displayName /*+ (replayer.GetActualVisibility(index) ? " Visible" : " Hidden")*/;
         position = EditorGUI.PrefixLabel(position,
@@ -368,6 +405,7 @@ public class ReplaySystemEditor : Editor
                 if (GUI.Button(visibilityButtonRect, "Hide", elementButtonStyle))
                 {
                     replayer.RecordingByIndexSetActorVisibility(index, false);
+                    shouldUpdateVisibility = true;
                 }
             }
             else
@@ -375,6 +413,7 @@ public class ReplaySystemEditor : Editor
                 if (GUI.Button(visibilityButtonRect, "Hidden", toggledElementButtonStyle))
                 {
                     replayer.RecordingByIndexSetActorVisibility(index, true);
+                    shouldUpdateVisibility = true;
                 }
             }
         }
@@ -387,6 +426,7 @@ public class ReplaySystemEditor : Editor
             if(GUI.Button(soloButtonRect, "Solo", toggledElementButtonStyle))
             {
                 replayer.RecordingByIndexSetActorSolo(index, false);
+                shouldUpdateVisibility = true;
             }
         }
         else
@@ -394,6 +434,7 @@ public class ReplaySystemEditor : Editor
             if(GUI.Button(soloButtonRect, "Solo", elementButtonStyle))
             {
                 replayer.RecordingByIndexSetActorSolo(index, true);
+                shouldUpdateVisibility = true;
             }
         }
 
@@ -405,6 +446,7 @@ public class ReplaySystemEditor : Editor
             if(GUI.Button(cameraButtonRect, "Camera", toggledElementButtonStyle))
             {
                 replayer.RecordingByIndexSetCameraController(index, false);
+                shouldUpdateVisibility = true;
             }
         }
         else
@@ -412,9 +454,9 @@ public class ReplaySystemEditor : Editor
             if(GUI.Button(cameraButtonRect, "Camera", elementButtonStyle))
             {
                 replayer.RecordingByIndexSetCameraController(index, true);
+                shouldUpdateVisibility = true;
             }
         }
-
 
         if (EditorGUI.EndChangeCheck())
         {
