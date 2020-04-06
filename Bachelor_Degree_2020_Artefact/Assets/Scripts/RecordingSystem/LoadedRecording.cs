@@ -238,7 +238,6 @@ public class LoadedRecording
 
     public void MakeCameraController(bool shouldControlCamera)
     {
-        Transform oldControlledTransform = controlledTransform;
         if (shouldControlCamera)
         {
             controlledTransform = replayCamera.transform;
@@ -247,8 +246,7 @@ public class LoadedRecording
         {
             controlledTransform = replayActor.transform;
         }
-        controlledTransform.position = oldControlledTransform.position;
-        controlledTransform.rotation = oldControlledTransform.rotation;
+        GoToTime(currentTime);
     }
 
     public Color GetColor()
@@ -298,11 +296,6 @@ public class LoadedRecording
 
     public void ClearHeatmap()
     {
-        //Transform parentTransform = GetHeatmapParent().transform;
-        //foreach(Transform child in parentTransform)
-        //{
-        //    GameObject.Destroy(child.gameObject);
-        //}
         GetHeatmapParent().ClearHeatmap();
     }
 

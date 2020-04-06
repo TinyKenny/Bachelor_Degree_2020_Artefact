@@ -44,7 +44,8 @@ public class ReplaySystem : MonoBehaviour
 
     [SerializeField] private GameObject heatmapMarkerPrefab = null;
     [SerializeField] private GameObject replayActorPrefab = null;
-    [SerializeField] private Camera replayCamera = null;
+    [SerializeField] private Camera mainCamera = null;
+    [SerializeField] private Camera heatmapCamera = null;
 
     [HideInInspector]
     [SerializeField] private List<LoadedRecording> loadedRecordings = new List<LoadedRecording>();
@@ -53,7 +54,7 @@ public class ReplaySystem : MonoBehaviour
     [HideInInspector]
     [SerializeField] private int numberOfSolo = 0;
 
-    private DisplayMode currentDisplayMode = DisplayMode.REPLAY;
+    private DisplayMode currentDisplayMode = DisplayMode.HEATMAP;
 
     #region replay_mode
     private LoadedRecording currentCameraController = null;
@@ -82,7 +83,7 @@ public class ReplaySystem : MonoBehaviour
     {
         if (Application.isEditor)
         {
-            CameraController playerCameraController = replayCamera.GetComponent<CameraController>();
+            CameraController playerCameraController = mainCamera.GetComponent<CameraController>();
             if(playerCameraController != null)
             {
                 Destroy(playerCameraController);
@@ -94,6 +95,7 @@ public class ReplaySystem : MonoBehaviour
                 Destroy(playerMovement.gameObject);
             }
 
+            //heatmapCamera.enabled = false;
 
             pausedMode = new PausedMode();
             playingMode = new PlaybackMode(true);
@@ -126,8 +128,8 @@ public class ReplaySystem : MonoBehaviour
                 if (Cursor.lockState == CursorLockMode.None)
                 {
                     Cursor.lockState = CursorLockMode.Locked;
-                    manualCameraRotationX = replayCamera.transform.eulerAngles.x;
-                    manualCameraRotationY = replayCamera.transform.eulerAngles.y;
+                    manualCameraRotationX = mainCamera.transform.eulerAngles.x;
+                    manualCameraRotationY = mainCamera.transform.eulerAngles.y;
                 }
                 else
                 {
@@ -145,14 +147,14 @@ public class ReplaySystem : MonoBehaviour
 
                 manualCameraRotationX = Mathf.Clamp(manualCameraRotationX, -manualCameraMaxXDegrees, manualCameraMaxXDegrees);
 
-                replayCamera.transform.rotation = Quaternion.Euler(manualCameraRotationX, manualCameraRotationY, 0.0f);
+                mainCamera.transform.rotation = Quaternion.Euler(manualCameraRotationX, manualCameraRotationY, 0.0f);
 
                 Vector3 movementInputVector = new Vector3(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Jump") - Input.GetAxisRaw("Fire1"), Input.GetAxisRaw("Vertical"));
                 if (movementInputVector.sqrMagnitude > 0.1f)
                 {
                     movementInputVector *= manualCameraMovementSpeed * (Input.GetKey(KeyCode.LeftShift) ? manualCameraShiftSpeedMult : 1.0f);
-                    movementInputVector = replayCamera.transform.rotation * movementInputVector;
-                    replayCamera.transform.position += movementInputVector * Time.deltaTime;
+                    movementInputVector = mainCamera.transform.rotation * movementInputVector;
+                    mainCamera.transform.position += movementInputVector * Time.deltaTime;
                 }
             }
         }
@@ -175,7 +177,7 @@ public class ReplaySystem : MonoBehaviour
         string[] splittedFilePath = filepath.Split('/');
         string recordingName = splittedFilePath[splittedFilePath.Length - 1].Split('.')[0];
 
-        loadedRecordings.Add(new LoadedRecording(recordingName, filepath, recordedDataList, heatmapMarkerPrefab, replayActorPrefab, replayCamera));
+        loadedRecordings.Add(new LoadedRecording(recordingName, filepath, recordedDataList, heatmapMarkerPrefab, replayActorPrefab, mainCamera));
     }
 
     public void RecordingByIndexRemove(int recordingIndex)
@@ -384,9 +386,10 @@ public class ReplaySystem : MonoBehaviour
                 {
                     recording.HideHeatmap();
                 }
+                //SetUseMainCamera(0);
             }
-            Debug.Log("replay system: display mode changed, do stuff");
             currentDisplayMode = desired;
+
             UpdateActorsActualVisibility();
         }
     }
@@ -430,6 +433,29 @@ public class ReplaySystem : MonoBehaviour
             recording.SetHeatmapObjectScale(heatmapObjectScale);
         }
     }
+
+    //public void SetUseMainCamera(int shouldUse)
+    //{
+    //    if (!IsReplayDisplayMode())
+    //    {
+    //        if (shouldUse == 0)
+    //        {
+    //            if (!mainCamera.gameObject.activeSelf)
+    //            {
+    //                mainCamera.gameObject.SetActive(true);
+    //                heatmapCamera.gameObject.SetActive(false);
+    //            }
+    //        }
+    //        else
+    //        {
+    //            if (mainCamera.gameObject.activeSelf)
+    //            {
+    //                mainCamera.gameObject.SetActive(false);
+    //                heatmapCamera.gameObject.SetActive(true);
+    //            }
+    //        }
+    //    }
+    //}
 
 
     /// <summary>
