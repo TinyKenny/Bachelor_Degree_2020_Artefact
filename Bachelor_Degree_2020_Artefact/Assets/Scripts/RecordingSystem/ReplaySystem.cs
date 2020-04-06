@@ -55,6 +55,7 @@ public class ReplaySystem : MonoBehaviour
 
     private DisplayMode currentDisplayMode = DisplayMode.REPLAY;
 
+    #region replay_mode
     private LoadedRecording currentCameraController = null;
 
     private PlayMode currentPlayMode;
@@ -62,11 +63,38 @@ public class ReplaySystem : MonoBehaviour
     private PlayMode pausedMode;
     private PlayMode playingMode;
     private PlayMode reverseMode;
+    #endregion //replay_mode
+
+    #region heatmap_mode
+    private float heatmapObjectScale = 1.0f;
+    #endregion //heatmap_mode
+
+    #region manual camera controls
+    [SerializeField] private float manualCameraMovementSpeed = 5.0f;
+    [SerializeField] private float manualCameraShiftSpeedMult = 3.0f;
+    [SerializeField] private float manualCameraLookSensitivity = 1.0f;
+    private float manualCameraMaxXDegrees = 90.0f;
+    private float manualCameraRotationX = 0.0f;
+    private float manualCameraRotationY = 0.0f;
+    #endregion // manual camera controls
 
     private void Awake()
     {
         if (Application.isEditor)
         {
+            CameraController playerCameraController = replayCamera.GetComponent<CameraController>();
+            if(playerCameraController != null)
+            {
+                Destroy(playerCameraController);
+            }
+
+            PlayerMovement playerMovement = FindObjectOfType<PlayerMovement>();
+            if (playerMovement != null)
+            {
+                Destroy(playerMovement.gameObject);
+            }
+
+
             pausedMode = new PausedMode();
             playingMode = new PlaybackMode(true);
             reverseMode = new PlaybackMode(false);
@@ -89,6 +117,48 @@ public class ReplaySystem : MonoBehaviour
         if (IsReplayDisplayMode())
         {
             currentPlayMode.HandleUpdate(loadedRecordings);
+        }
+
+        if(!IsReplayDisplayMode() || currentCameraController == null)
+        {
+            if (Input.GetMouseButtonDown(0))
+            {
+                if (Cursor.lockState == CursorLockMode.None)
+                {
+                    Cursor.lockState = CursorLockMode.Locked;
+                    manualCameraRotationX = replayCamera.transform.eulerAngles.x;
+                    manualCameraRotationY = replayCamera.transform.eulerAngles.y;
+                }
+                else
+                {
+                    Cursor.lockState = CursorLockMode.None;
+                }
+            }
+
+            if (Cursor.lockState == CursorLockMode.Locked)
+            {
+                float mouseX = Input.GetAxisRaw("Mouse X") * manualCameraLookSensitivity;
+                float mouseY = Input.GetAxisRaw("Mouse Y") * manualCameraLookSensitivity;
+
+                manualCameraRotationY += mouseX;
+                manualCameraRotationX -= mouseY;
+
+                manualCameraRotationX = Mathf.Clamp(manualCameraRotationX, -manualCameraMaxXDegrees, manualCameraMaxXDegrees);
+
+                replayCamera.transform.rotation = Quaternion.Euler(manualCameraRotationX, manualCameraRotationY, 0.0f);
+
+                Vector3 movementInputVector = new Vector3(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Jump") - Input.GetAxisRaw("Fire1"), Input.GetAxisRaw("Vertical"));
+                if (movementInputVector.sqrMagnitude > 0.1f)
+                {
+                    movementInputVector *= manualCameraMovementSpeed * (Input.GetKey(KeyCode.LeftShift) ? manualCameraShiftSpeedMult : 1.0f);
+                    movementInputVector = replayCamera.transform.rotation * movementInputVector;
+                    replayCamera.transform.position += movementInputVector * Time.deltaTime;
+                }
+            }
+        }
+        else
+        {
+            Cursor.lockState = CursorLockMode.None;
         }
     }
 
@@ -274,6 +344,16 @@ public class ReplaySystem : MonoBehaviour
         }
     }
 
+    public Color RecordingByIndexGetColor(int recordingIndex)
+    {
+        return loadedRecordings[recordingIndex].GetColor();
+    }
+
+    public void RecordingByIndexSetColor(int recordingIndex, Color colorToSet)
+    {
+        loadedRecordings[recordingIndex].SetColor(colorToSet);
+    }
+
     public bool RecordingByIndexGetActualVisibility(int recordingIndex)
     {
         return loadedRecordings[recordingIndex].GetActualVisibility();
@@ -321,7 +401,35 @@ public class ReplaySystem : MonoBehaviour
         return currentDisplayMode == DisplayMode.HEATMAP;
     }
 
+    public void GenerateNewHeatMap()
+    {
+        foreach(LoadedRecording recording in loadedRecordings)
+        {
+            recording.GenerateNewHeatMap(heatmapObjectScale);
+        }
+    }
 
+    public void ClearHeatmap()
+    {
+        foreach(LoadedRecording recording in loadedRecordings)
+        {
+            recording.ClearHeatmap();
+        }
+    }
+
+    public float GetHeatmapObjectScale()
+    {
+        return heatmapObjectScale;
+    }
+
+    public void SetHeatmapObjectScale(float scale)
+    {
+        heatmapObjectScale = scale;
+        foreach(LoadedRecording recording in loadedRecordings)
+        {
+            recording.SetHeatmapObjectScale(heatmapObjectScale);
+        }
+    }
 
 
     /// <summary>

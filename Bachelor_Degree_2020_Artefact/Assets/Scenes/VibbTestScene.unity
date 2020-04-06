@@ -728,6 +728,9 @@ MonoBehaviour:
   loadedRecordings: []
   removedRecordings: []
   numberOfSolo: 0
+  manualCameraMovementSpeed: 5
+  manualCameraShiftSpeedMult: 3
+  manualCameraLookSensitivity: 5
 --- !u!1 &966410074
 GameObject:
   m_ObjectHideFlags: 0

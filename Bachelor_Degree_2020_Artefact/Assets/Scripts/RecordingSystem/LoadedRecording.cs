@@ -9,40 +9,45 @@ public class LoadedRecording
     [SerializeField] private string name = "Test-text";
     private string filePath = "";
     private RecordedDataList dataList = null;
+    private Color currentColor = Color.white;
 
     private readonly GameObject replayActorPrefab = null;
-    private GameObject replayActor = null;
+    private ReplayActorColorController replayActor = null;
     private Camera replayCamera = null;
     private Transform controlledTransform = null;
-    private RecordedDataList.RecordedData currentNode = null;
+    private RecordedDataList.RecordedData currentReplayNode = null;
     private int currentNodeIndex = 0;
     private float currentTime = 0.0f;
     private bool visible = true;
     private bool soloMode = false;
 
     private readonly GameObject heatmapObjectPrefab = null;
-    private GameObject heatmapParent = null;
+    private HeatmapHolder heatmapParent = null;
 
     public LoadedRecording(string filename, string path, RecordedDataList recordedData, GameObject heatmapMarkerPrefab, GameObject actorPrefab, Camera camera)
     {
         name = filename;
         filePath = path;
         dataList = recordedData;
+        currentColor = Color.black;
+
         replayActorPrefab = actorPrefab;
-        replayActor = GameObject.Instantiate(actorPrefab);
+        replayActor = GameObject.Instantiate(actorPrefab).GetComponent<ReplayActorColorController>();
         replayActor.name = "Actor_" + name;
         replayCamera = camera;
         controlledTransform = replayActor.transform;
         GoToFirstNode();
 
         heatmapObjectPrefab = heatmapMarkerPrefab;
-        heatmapParent = new GameObject();
+        GetHeatmapParent();
+
+        SetColor(Color.white);
     }
 
     public void DoCleanup()
     {
-        GameObject.DestroyImmediate(replayActor);
-        GameObject.DestroyImmediate(heatmapParent);
+        GameObject.DestroyImmediate(replayActor.gameObject);
+        GameObject.DestroyImmediate(GetHeatmapParent().gameObject);
     }
 
     public string GetRecordingName()
@@ -67,9 +72,9 @@ public class LoadedRecording
 
     public void GoToNextNode()
     {
-        if(currentNode.nextData != null)
+        if(currentReplayNode.nextData != null)
         {
-            currentNode = currentNode.nextData;
+            currentReplayNode = currentReplayNode.nextData;
             currentNodeIndex++;
             UpdateToCurrentNode();
         }
@@ -77,9 +82,9 @@ public class LoadedRecording
 
     public void GoToPreviousNode()
     {
-        if(currentNode.previousData != null)
+        if(currentReplayNode.previousData != null)
         {
-            currentNode = currentNode.previousData;
+            currentReplayNode = currentReplayNode.previousData;
             currentNodeIndex--;
             UpdateToCurrentNode();
         }
@@ -87,14 +92,14 @@ public class LoadedRecording
 
     public void GoToFirstNode()
     {
-        currentNode = dataList.GetFirstNode();
+        currentReplayNode = dataList.GetFirstNode();
         currentNodeIndex = 0;
         UpdateToCurrentNode();
     }
 
     public void GoToFinalNode()
     {
-        currentNode = dataList.GetFinalNode();
+        currentReplayNode = dataList.GetFinalNode();
         currentNodeIndex = GetFinalNodeIndex();
         UpdateToCurrentNode();
     }
@@ -112,14 +117,14 @@ public class LoadedRecording
             return;
         }
 
-        while (currentNodeIndex < nodeIndex && currentNode.nextData != null)
+        while (currentNodeIndex < nodeIndex && currentReplayNode.nextData != null)
         {
-            currentNode = currentNode.nextData;
+            currentReplayNode = currentReplayNode.nextData;
             currentNodeIndex++;
         }
-        while (currentNodeIndex > nodeIndex && currentNode.previousData != null)
+        while (currentNodeIndex > nodeIndex && currentReplayNode.previousData != null)
         {
-            currentNode = currentNode.previousData;
+            currentReplayNode = currentReplayNode.previousData;
             currentNodeIndex--;
         }
         
@@ -145,18 +150,18 @@ public class LoadedRecording
         }
         else
         {
-            while(currentNode.nextData != null && targetTime > currentNode.nextData.time)
+            while(currentReplayNode.nextData != null && targetTime > currentReplayNode.nextData.time)
             {
-                currentNode = currentNode.nextData;
+                currentReplayNode = currentReplayNode.nextData;
                 currentNodeIndex++;
             }
-            while(currentNode.previousData != null && targetTime < currentNode.time)
+            while(currentReplayNode.previousData != null && targetTime < currentReplayNode.time)
             {
-                currentNode = currentNode.previousData;
+                currentReplayNode = currentReplayNode.previousData;
                 currentNodeIndex--;
             }
 
-            if (currentNode.nextData == null)
+            if (currentReplayNode.nextData == null)
             {
                 Debug.LogError("LoadedRecording (" + name + "), GoToTime: target time " + targetTime.ToString() + " reached final node through while-loop");
                 GoToFinalNode();
@@ -164,15 +169,15 @@ public class LoadedRecording
             else
             {
 
-                float timeBetweenNodes = currentNode.nextData.time - currentNode.time;
-                float targetTimeFromNode = targetTime - currentNode.time;
+                float timeBetweenNodes = currentReplayNode.nextData.time - currentReplayNode.time;
+                float targetTimeFromNode = targetTime - currentReplayNode.time;
                 float lerpControl = targetTimeFromNode / timeBetweenNodes;
 
-                controlledTransform.position = Vector3.Lerp(GetNodePosition(currentNode),
-                                                            GetNodePosition(currentNode.nextData),
+                controlledTransform.position = Vector3.Lerp(GetNodePosition(currentReplayNode),
+                                                            GetNodePosition(currentReplayNode.nextData),
                                                             lerpControl);
-                controlledTransform.rotation = Quaternion.Slerp(GetNodeRotation(currentNode),
-                                                                GetNodeRotation(currentNode.nextData),
+                controlledTransform.rotation = Quaternion.Slerp(GetNodeRotation(currentReplayNode),
+                                                                GetNodeRotation(currentReplayNode.nextData),
                                                                 lerpControl);
                 currentTime = targetTime;
             }
@@ -211,7 +216,7 @@ public class LoadedRecording
 
     public bool GetActualVisibility()
     {
-        return replayActor.activeSelf;
+        return replayActor.gameObject.activeSelf;
     }
 
     public void UpdateActorActualVisibility(bool anySolo, bool displayReplayMode)
@@ -246,6 +251,72 @@ public class LoadedRecording
         controlledTransform.rotation = oldControlledTransform.rotation;
     }
 
+    public Color GetColor()
+    {
+        return currentColor;
+    }
+
+    public void SetColor(Color colorToSet)
+    {
+        if (!colorToSet.Equals(currentColor))
+        {
+            currentColor = colorToSet;
+
+            heatmapParent.SetColor(colorToSet);
+            replayActor.SetColor(colorToSet);
+        }
+    }
+
+    public void HideHeatmap()
+    {
+        GetHeatmapParent().gameObject.SetActive(false);
+    }
+
+    public void GenerateNewHeatMap(float scale)
+    {
+        ClearHeatmap();
+        Transform parentTransform = GetHeatmapParent().transform;
+
+        RecordedDataList.RecordedData currentHeatmapNode = dataList.GetFirstNode();
+        int heatmapNodeIndex = 0;
+
+        while (currentHeatmapNode != null)
+        {
+            GameObject heatmapObject = GameObject.Instantiate(heatmapObjectPrefab,
+                                                              GetNodePosition(currentHeatmapNode),
+                                                              GetNodeRotation(currentHeatmapNode),
+                                                              parentTransform);
+            heatmapObject.name = "Node_" + heatmapNodeIndex.ToString();
+
+            heatmapNodeIndex++;
+            currentHeatmapNode = currentHeatmapNode.nextData;
+        }
+
+        GetHeatmapParent().UpdateRendererList();
+        GetHeatmapParent().SetColor(currentColor);
+    }
+
+    public void ClearHeatmap()
+    {
+        //Transform parentTransform = GetHeatmapParent().transform;
+        //foreach(Transform child in parentTransform)
+        //{
+        //    GameObject.Destroy(child.gameObject);
+        //}
+        GetHeatmapParent().ClearHeatmap();
+    }
+
+    public void SetHeatmapObjectScale(float scale)
+    {
+        Vector3 childScale = new Vector3(scale, scale, scale);
+        Transform parentTransform = GetHeatmapParent().transform;
+        foreach(Transform child in parentTransform)
+        {
+            child.localScale = childScale;
+        }
+    }
+    
+
     private Vector3 GetNodePosition(RecordedDataList.RecordedData node)
     {
         return new Vector3(node.posX, node.posY, node.posZ);
@@ -258,33 +329,39 @@ public class LoadedRecording
 
     private void UpdateToCurrentNode()
     {
-        controlledTransform.position = GetNodePosition(currentNode);
-        controlledTransform.rotation = GetNodeRotation(currentNode);
-        currentTime = currentNode.time;
-    }
-
-    public void HideHeatmap()
-    {
-        heatmapParent.SetActive(false);
+        controlledTransform.position = GetNodePosition(currentReplayNode);
+        controlledTransform.rotation = GetNodeRotation(currentReplayNode);
+        currentTime = currentReplayNode.time;
     }
 
     private void SetActorActualVisibility(bool shouldBeVisible, bool displayReplayMode)
     {
         if (displayReplayMode)
         {
-            if (shouldBeVisible && !replayActor.activeSelf && !IsCameraController())
+            HideHeatmap();
+            if (shouldBeVisible && !replayActor.gameObject.activeSelf && !IsCameraController())
             {
-                replayActor.SetActive(true);
+                replayActor.gameObject.SetActive(true);
             }
-            else if ((IsCameraController() || !shouldBeVisible) && replayActor.activeSelf)
+            else if ((IsCameraController() || !shouldBeVisible) && replayActor.gameObject.activeSelf)
             {
-                replayActor.SetActive(false);
+                replayActor.gameObject.SetActive(false);
             }
         }
         else
         {
-            replayActor.SetActive(false);
-            heatmapParent.SetActive(shouldBeVisible);
+            replayActor.gameObject.SetActive(false);
+            GetHeatmapParent().gameObject.SetActive(shouldBeVisible);
         }
+    }
+
+    private HeatmapHolder GetHeatmapParent()
+    {
+        if(heatmapParent == null)
+        {
+            GameObject heatmapParentObject = new GameObject(name + "_heatmap_holder");
+            heatmapParent = heatmapParentObject.AddComponent<HeatmapHolder>();
+        }
+        return heatmapParent;
     }
 }

@@ -32,6 +32,8 @@ public class ReplaySystemEditor : Editor
     private float targetTimeSelectedRecording = 0.0f;
     private float targetTimePercentSelectedRecording = 0.0f;
 
+    private float heatmapObjectScaleToSet = 1.0f;
+
 
     private void OnEnable()
     {
@@ -55,11 +57,7 @@ public class ReplaySystemEditor : Editor
         displayControlsForAll = true;
         displayControlsForSelected = true;
 
-        //elementButtonStyle = new GUIStyle(GUI.skin.button);
-        //elementButtonStyle.alignment = TextAnchor.MiddleCenter;
-        //toggledElementButtonStyle = new GUIStyle(elementButtonStyle);
-        //toggledElementButtonStyle.normal.textColor = toggleButtonTextColor;
-        //toggledElementButtonStyle.active.textColor = toggledElementButtonStyle.normal.textColor;
+        heatmapObjectScaleToSet = replayer.GetHeatmapObjectScale();
 
     }
 
@@ -289,27 +287,50 @@ public class ReplaySystemEditor : Editor
                     }
 
                     GUILayout.EndVertical();
-                }
+                } // replay mode
                 else if (replayer.IsHeatmapDisplayMode())
                 {
                     GUILayout.BeginVertical("box");
 
                     EditorGUILayout.HelpBox("Heatmap mode, aww yeah!", MessageType.Info);
 
-                    if(GUILayout.Button(new GUIContent("Generate new heatmap")))
+                    if(GUILayout.Button("Generate new heatmap"))
                     {
-
+                        replayer.GenerateNewHeatMap();
+                    }
+                    if (GUILayout.Button("Clear heatmap"))
+                    {
+                        replayer.ClearHeatmap();
                     }
 
+                    /*
+                    // wont lag when the user changes the slider value, only when the user presses the button
+
+                    GUILayout.BeginHorizontal();
+                    if(GUILayout.Button("Set scale to:"))
+                    {
+                        replayer.SetHeatmapObjectScale(heatmapObjectScaleToSet);
+                    }
+                    heatmapObjectScaleToSet = EditorGUILayout.Slider(heatmapObjectScaleToSet, 0.0f, 2.0f);
+                    GUILayout.EndHorizontal();
+                    */
+
+                    // can lag when the user changes the slider value
+                    replayer.SetHeatmapObjectScale(EditorGUILayout.Slider("Object size", replayer.GetHeatmapObjectScale(), 0.0f, 2.0f));
+
+
+
+
                     GUILayout.EndVertical();
-                }
+                } // heatmap mode
 
 
                 GUILayout.EndVertical();
-            }
+            } // disabled scope (data is loaded)
 
             //EditorGUILayout.PropertyField(loadedRecordings, /*new GUIContent("test"),*/ true);
-        }
+
+        } // disabled scope (application is running)
         
 
         reorderable.DoLayoutList();
@@ -359,18 +380,8 @@ public class ReplaySystemEditor : Editor
         position.height -= 2.0f;
 
 
-        string displayName = element.displayName /*+ (replayer.GetActualVisibility(index) ? " Visible" : " Hidden")*/;
-        position = EditorGUI.PrefixLabel(position,
-                                         GUIUtility.GetControlID(FocusType.Passive),
-                                         new GUIContent(displayName));
-        //EditorGUI.Toggle(position, false);
+        
 
-
-        //GUIStyle elementButtonStyle = new GUIStyle(GUI.skin.button);
-        //elementButtonStyle.alignment = TextAnchor.MiddleCenter;
-        //GUIStyle toggledElementButtonStyle = new GUIStyle(elementButtonStyle);
-        //toggledElementButtonStyle.normal.textColor = toggleButtonTextColor;
-        //toggledElementButtonStyle.active.textColor = toggledElementButtonStyle.normal.textColor;
 
         EditorGUI.BeginChangeCheck();
 
@@ -391,13 +402,12 @@ public class ReplaySystemEditor : Editor
                 selectionIndexChangeByRemove++;
             }
         }
-        //position = EditorGUI.PrefixLabel(position, GUIUtility.GetControlID(FocusType.Passive), new GUIContent(element.FindPropertyRelative("name").stringValue));
+        
 
 
         float hideButtonWidth = 50.0f;
         Rect visibilityButtonRect = new Rect(remButtonRect.x - hideButtonWidth - buttonRightPlacementPadding,
                                              remButtonRect.y, hideButtonWidth, remButtonRect.height);
-
         using (new EditorGUI.DisabledScope(replayer.IsAnyActorSoloVisible()))
         {
             if (replayer.RecordingByIndexIsActorVisible(index))
@@ -458,10 +468,41 @@ public class ReplaySystemEditor : Editor
             }
         }
 
+
+        //string displayName = element.displayName /*+ (replayer.GetActualVisibility(index) ? " Visible" : " Hidden")*/;
+        //position = EditorGUI.PrefixLabel(position,
+        //                                 GUIUtility.GetControlID(FocusType.Passive),
+        //                                 new GUIContent(displayName));
+        GUIContent labelContent = new GUIContent(element.displayName);
+        Rect LabelRect = GUILayoutUtility.GetRect(labelContent, GUI.skin.label, GUILayout.ExpandWidth(false));
+        LabelRect.x = position.x;
+        LabelRect.y = position.y + (position.height - LabelRect.height) / 2.0f;
+        LabelRect.width += 1.0f;
+        //LabelRect.height = position.height;
+        //EditorGUI.DrawRect(LabelRect, Color.cyan);
+        GUI.Label(LabelRect, labelContent);
+
+        //position.width -= LabelRect.xMax - position.x;
+        position.x = LabelRect.xMax;
+
+
+        position.xMax = cameraButtonRect.x;
+
+        //EditorGUI.DrawRect(position, Color.yellow);
+
+        float colorFieldWidth = 50.0f;
+        Rect colorFieldRect = new Rect(position.x, position.y, colorFieldWidth, position.height);
+        replayer.RecordingByIndexSetColor(index,
+                                          EditorGUI.ColorField(colorFieldRect,
+                                                               GUIContent.none,
+                                                               replayer.RecordingByIndexGetColor(index),
+                                                               true, false, false));
+
+
         if (EditorGUI.EndChangeCheck())
         {
             EditorUtility.SetDirty(target);
         }
     }
-    
+
 }
