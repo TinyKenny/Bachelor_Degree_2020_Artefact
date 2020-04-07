@@ -5,6 +5,7 @@ using UnityEngine;
 [RequireComponent(typeof(BoxCollider))]
 public class RecordingStartTrigger : MonoBehaviour
 {
+    [SerializeField] private Transform playerStart;
 
     private RecordingSystem recorder;
 
@@ -25,6 +26,8 @@ public class RecordingStartTrigger : MonoBehaviour
     {
         if (other.CompareTag("Player"))
         {
+            other.transform.position = playerStart.position;
+            Camera.main.GetComponent<CameraController>().SetRotation(transform.eulerAngles.x, transform.eulerAngles.y);
             recorder?.StartRecording();
         }
     }

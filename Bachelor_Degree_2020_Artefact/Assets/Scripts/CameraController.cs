@@ -12,9 +12,15 @@ public class CameraController : MonoBehaviour
     private float rotationX = 0.0f;
     private float rotationY = 0.0f;
 
+    private void Awake()
+    {
+        rotationX = transform.eulerAngles.x;
+        rotationY = transform.eulerAngles.y;
+    }
+
     void Start()
     {
-        
+
     }
 
     void LateUpdate()
@@ -24,6 +30,14 @@ public class CameraController : MonoBehaviour
         transform.rotation = UpdateRotation();
         transform.position = playerTransform.position + firstPersonOffset;
 
+    }
+
+    public void SetRotation(float rotX, float rotY)
+    {
+        rotationX = rotX;
+        rotationY = rotY;
+
+        transform.rotation = Quaternion.Euler(rotationX, rotationY, 0.0f);
     }
 
 
@@ -39,5 +53,14 @@ public class CameraController : MonoBehaviour
 
         return Quaternion.Euler(rotationX, rotationY, 0.0f);
 
+    }
+
+    [ContextMenu("Move to player position")]
+    private void MoveToPlayerPosition()
+    {
+        if (playerTransform != null)
+        {
+            transform.position = playerTransform.position + firstPersonOffset;
+        }
     }
 }

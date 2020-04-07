@@ -1,6 +1,8 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class RecordingSystem : MonoBehaviour
 {
@@ -10,12 +12,14 @@ public class RecordingSystem : MonoBehaviour
 
     [SerializeField] private RecordingStartTrigger startTrigger = null;
     [SerializeField] private RecordingEndTrigger endTrigger = null;
+    [SerializeField] private Canvas endCanvas = null;
+    [SerializeField] private Text exitPromptText = null;
 
     private bool isRecording = false;
     private Transform playerCameraTransform;
     private RecordedDataList dataList;
-    float nextTimeToRecord = 0.0f;
-    float timeBetweenRecords = 0.1f;
+    private float nextTimeToRecord = 0.0f;
+    private float timeBetweenRecords = 0.1f;
 
     private void Awake()
     {
@@ -23,11 +27,13 @@ public class RecordingSystem : MonoBehaviour
         endTrigger.RegisterRecordingSystem(this);
         dataList = new RecordedDataList();
         playerCameraTransform = Camera.main.transform;
+        endCanvas.gameObject.SetActive(false);
+        exitPromptText.gameObject.SetActive(false);
     }
 
     public void StartRecording()
     {
-        Debug.Log("Recodring should start now.");
+        //Debug.Log("Recodring should start now.");
         isRecording = true;
         mazeTime = 0.0f;
         nextTimeToRecord = 0.0f;
@@ -35,10 +41,20 @@ public class RecordingSystem : MonoBehaviour
 
     public void StopRecording()
     {
-        Debug.Log("recodring should end now.");
+        //Debug.Log("recodring should end now.");
         isRecording = false;
-        Debug.Log("TODO: activate end-screen UI");
+        endCanvas.gameObject.SetActive(true);
+        
+        //dataList.SaveRecordingToFile();
+
+        Thread thread = new Thread(SaveRecording);
+        thread.Start();
+    }
+
+    private void SaveRecording()
+    {
         dataList.SaveRecordingToFile();
+        exitPromptText.gameObject.SetActive(true);
     }
 
     void Update()
@@ -59,6 +75,10 @@ public class RecordingSystem : MonoBehaviour
                 nextTimeToRecord += timeBetweenRecords;
             }
             mazeTime += Time.deltaTime;
+        }
+        else if(exitPromptText.gameObject.activeSelf && Input.anyKeyDown)
+        {
+            Application.Quit(0);
         }
     }
 }

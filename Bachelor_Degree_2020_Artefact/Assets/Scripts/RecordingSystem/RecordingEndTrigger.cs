@@ -5,7 +5,6 @@ using UnityEngine;
 [RequireComponent(typeof(BoxCollider))]
 public class RecordingEndTrigger : MonoBehaviour
 {
-
     private RecordingSystem recorder;
 
     private void Awake()
@@ -25,6 +24,7 @@ public class RecordingEndTrigger : MonoBehaviour
     {
         if (other.CompareTag("Player"))
         {
+            other.gameObject.SetActive(false);
             recorder?.StopRecording();
         }
     }
