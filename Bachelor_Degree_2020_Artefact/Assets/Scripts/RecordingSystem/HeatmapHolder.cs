@@ -11,6 +11,7 @@ public class HeatmapHolder : MonoBehaviour
         foreach(MeshRenderer ren in childrenRenderers)
         {
             ren.material.color = colorToSet;
+            ren.material.SetColor("_EmissionColor", colorToSet);
         }
     }
 

@@ -23,6 +23,7 @@ public class ReplayActorColorController : MonoBehaviour
         if(meshRenderer != null)
         {
             meshRenderer.material.color = colorToSet;
+            meshRenderer.material.SetColor("_EmissionColor", colorToSet);
         }
     }
 }
