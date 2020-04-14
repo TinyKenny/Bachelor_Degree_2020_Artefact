@@ -2,96 +2,70 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-//Main Author: Debatable
-
+// This class was ripped from a previous project and has been slightly adapted to our current needs.
+// a lot of variables and methods are likely to be out of date
+[RequireComponent(typeof(PhysicsComponent), typeof(CapsuleCollider))]
 public class PlayerBaseState : MonoBehaviour
 {
-    #region Properties with set methods
-    //values that will stay the same regardless of state
-    protected Quaternion Rotation { get { return transform.rotation; } set { transform.rotation = value; } }
-    protected Vector3 Velocity { get { return Velocity; } set { Velocity = value; } }
-    protected Vector3 Direction { get { return Direction; } set { Direction = value; } }
-    protected Vector3 LookDirection { get { return LookDirection; } set { LookDirection = value; } }
-    protected Vector3 FaceDirection { get { return FaceDirection; } set { FaceDirection = value; } }
-    protected float HorizontalDirection { get { return HorizontalDirection; } set { HorizontalDirection = value; } }
-    protected float VerticalDirection { get { return VerticalDirection; } set { VerticalDirection = value; } }
-   
-    #endregion
-
-    #region Properties with only get methods
-    private CapsuleCollider CapsuleCollider { get { return GetComponent<CapsuleCollider>(); } }
-    private LayerMask CollisionMask { get { return CollisionMask; } }
-    protected Transform Position { get { return transform; } }
+    public Vector3 Velocity = Vector3.zero;
 
 
-    //Physics Componetns
-    protected PhysicsComponent OwnerPhysics
-    {
-        get { return GetComponent<PhysicsComponent>(); }
-    }
-    #endregion
+    private Vector3 Direction = Vector3.zero;
+    private Vector3 LookDirection = Vector3.zero;
+    private Vector3 FaceDirection = Vector3.zero;
 
-    //values that can change from state to state
+
+
+
+    [SerializeField] private LayerMask collisionMask = 0;
+    
+    private PhysicsComponent characterPhysics = null;
+    private CapsuleCollider coll = null;
+
+    
+    private float horizontalDirection = 0.0f;
+    private float verticalDirection = 0.0f;
 
     private Vector3 pointUp;
     private Vector3 pointDown;
-    private Vector3 runningDistance;
-    private PhysicsComponent physics;
+    private PhysicsComponent otherPhysics;
     private RaycastHit capsuleRaycast;
-    private bool torchIsActive = false;
-    private Vector3 SpawnPoint;
-    private float frictionCoefficient = 0.95f;
+    [SerializeField] private float frictionCoefficient = 0.95f;
     private float airFriction = 0.95f;
 
-    protected float topSpeed = 8f;
-    protected float jumpForce = 10f;
-    protected float gravity = 6f;
-    protected float skinWidth = 0.05f;
-    protected float acceleration = 10f;
-    protected float maxSpeed = 8f;
-    protected bool isDead = false;
-    protected float respawTimer = 0;
-    
+    private float topSpeed = 8f;
+    private float gravity = 6f;
+    private float skinWidth = 0.05f;
+    private float acceleration = 10f;
+    private float maxSpeed = 8f;
+
+
+    private void Awake()
+    {
+        characterPhysics = GetComponent<PhysicsComponent>();
+        coll = GetComponent<CapsuleCollider>();
+    }
 
     public void Update()
     {
+        if (Grounded())
+        {
+            MovementInput();
+
+            CameraDirectionChanges();
+            ProjectToPlaneNormal();
+            ControlDirection();
+            GroundDistanceCheck();
+            Accelerate(Direction);
+        }
+
+        ApplyGravity();
+
+
         CollisionCheck(Velocity * Time.deltaTime);
-        Velocity = OwnerPhysics.AirFriction(Velocity);
-       
-        FaceTowardsDirection();
+        Velocity = characterPhysics.AirFriction(Velocity);
 
     }
-
-    /// <summary>
-    /// Faces the player towards the direction they are moving
-    /// </summary>
-    private void FaceTowardsDirection()
-    {
-        if (Velocity.magnitude > 0)
-        {
-            LookDirection = new Vector3(Velocity.x, 0, Velocity.z);
-            Position.LookAt(LookDirection);
-            FaceDirection += LookDirection * Time.deltaTime * 2;
-            if (FaceDirection.magnitude > 1)
-                FaceDirection = FaceDirection.normalized;
-            Position.LookAt(Position.position + FaceDirection);
-
-            //Position.rotation = Quaternion.RotateTowards(Position.rotation, Quaternion.LookRotation(LookDirection), 180.0f * Time.deltaTime);
-
-        }
-        else
-        {
-
-            //Position.rotation = Quaternion.RotateTowards(Position.rotation, Quaternion.LookRotation(LookDirection), 180.0f * Time.deltaTime);
-            Position.LookAt(Position.position + FaceDirection);
-            FaceDirection += LookDirection * Time.deltaTime * 2;
-            if (FaceDirection.magnitude > 1)
-                FaceDirection = FaceDirection.normalized;
-            //Position.LookAt(Position.position + FaceDirection);
-        }
-        
-    }
-
     
     /// <summary>
     /// Checks for collision using <see cref="capsuleRaycast"/> and recursive calls.
@@ -100,9 +74,9 @@ public class PlayerBaseState : MonoBehaviour
     public void CollisionCheck(Vector3 frameMovement)
     {
         
-        pointUp = Position.position + (CapsuleCollider.center + Vector3.up * (CapsuleCollider.height / 2 - CapsuleCollider.radius));
-        pointDown = Position.position + (CapsuleCollider.center + Vector3.down * (CapsuleCollider.height / 2 - CapsuleCollider.radius));
-        if (Physics.CapsuleCast(pointUp, pointDown, CapsuleCollider.radius, frameMovement.normalized, out capsuleRaycast, Mathf.Infinity, CollisionMask))
+        pointUp = transform.position + (coll.center + Vector3.up * (coll.height / 2 - coll.radius));
+        pointDown = transform.position + (coll.center + Vector3.down * (coll.height / 2 - coll.radius));
+        if (Physics.CapsuleCast(pointUp, pointDown, coll.radius, frameMovement.normalized, out capsuleRaycast, Mathf.Infinity, collisionMask))
         {
 
             float angle = (Vector3.Angle(capsuleRaycast.normal, frameMovement.normalized) - 90) * Mathf.Deg2Rad;
@@ -114,17 +88,18 @@ public class PlayerBaseState : MonoBehaviour
 
             //Vector3 snapMovementVector = frameMovement.normalized * snapdistance;
             snapMovementVector = Vector3.ClampMagnitude(snapMovementVector, frameMovement.magnitude);
-            Position.position += snapMovementVector;
             frameMovement -= snapMovementVector;
 
             Vector3 frameMovementNormalForce = HelpClass.NormalizeForce(frameMovement, capsuleRaycast.normal);
             frameMovement += frameMovementNormalForce;
 
+            transform.position += snapMovementVector;
+
             if (frameMovementNormalForce.magnitude > 0.001f)
             {
                 Vector3 velocityNormalForce = HelpClass.NormalizeForce(Velocity, capsuleRaycast.normal);
                 Velocity += velocityNormalForce;
-                ApplyFriction(velocityNormalForce.magnitude);
+                //ApplyFriction(velocityNormalForce.magnitude);
 
             }
 
@@ -137,7 +112,7 @@ public class PlayerBaseState : MonoBehaviour
 
         else
         {
-            Position.position += frameMovement;
+            transform.position += frameMovement;
         }
     }
 
@@ -146,9 +121,9 @@ public class PlayerBaseState : MonoBehaviour
     /// </summary>
     public void Decelerate()
     {
-        pointUp = Position.position + (CapsuleCollider.center + Vector3.up * (CapsuleCollider.height / 2 - CapsuleCollider.radius));
-        pointDown = Position.position + (CapsuleCollider.center + Vector3.down * (CapsuleCollider.height / 2 - CapsuleCollider.radius));
-        Physics.CapsuleCast(pointUp, pointDown, CapsuleCollider.radius, Velocity.normalized, out capsuleRaycast, maxSpeed, CollisionMask);
+        pointUp = transform.position + (coll.center + Vector3.up * (coll.height / 2 - coll.radius));
+        pointDown = transform.position + (coll.center + Vector3.down * (coll.height / 2 - coll.radius));
+        Physics.CapsuleCast(pointUp, pointDown, coll.radius, Velocity.normalized, out capsuleRaycast, maxSpeed, collisionMask);
 
         Vector3 velocityOnGround = Vector3.ProjectOnPlane(Velocity, capsuleRaycast.normal);
         Vector3 decelerationVector = velocityOnGround * frictionCoefficient;
@@ -172,12 +147,12 @@ public class PlayerBaseState : MonoBehaviour
     /// <param name="normalForce"></param>
     private void InheritVelocity(Transform collideObject, ref Vector3 normalForce)
     {
-        physics = collideObject.GetComponent<PhysicsComponent>();
-        if (physics == null)
+        otherPhysics = collideObject.GetComponent<PhysicsComponent>();
+        if (otherPhysics == null)
             return;
-        normalForce = normalForce.normalized * (normalForce.magnitude + Vector3.Project(physics.GetVelocity(), normalForce.normalized).magnitude);
-        Vector3 forceInDirection = Vector3.ProjectOnPlane(Velocity - physics.GetVelocity(), normalForce.normalized);
-        Vector3 friction = -forceInDirection.normalized * normalForce.magnitude * OwnerPhysics.GetStaticFriction();
+        normalForce = normalForce.normalized * (normalForce.magnitude + Vector3.Project(otherPhysics.GetVelocity(), normalForce.normalized).magnitude);
+        Vector3 forceInDirection = Vector3.ProjectOnPlane(Velocity - otherPhysics.GetVelocity(), normalForce.normalized);
+        Vector3 friction = -forceInDirection.normalized * normalForce.magnitude * characterPhysics.GetStaticFriction();
 
         if (friction.magnitude > forceInDirection.magnitude)
             friction = friction.normalized * forceInDirection.magnitude;
@@ -200,32 +175,37 @@ public class PlayerBaseState : MonoBehaviour
     /// <param name="direction"></param>
     public void Accelerate(Vector3 direction)
     {
-        
-        pointUp = Position.position + (CapsuleCollider.center + Vector3.up * (CapsuleCollider.height / 2 - CapsuleCollider.radius));
-        pointDown = Position.position + (CapsuleCollider.center + Vector3.down * (CapsuleCollider.height / 2 - CapsuleCollider.radius));
-        Physics.CapsuleCast(pointUp, pointDown, CapsuleCollider.radius, Velocity.normalized, out capsuleRaycast, maxSpeed, CollisionMask);
 
-        Vector3 velocityOnGround = Vector3.ProjectOnPlane(Velocity, capsuleRaycast.normal);
+        //pointUp = transform.position + (coll.center + Vector3.up * (coll.height / 2 - coll.radius));
+        //pointDown = transform.position + (coll.center + Vector3.down * (coll.height / 2 - coll.radius));
+        //Physics.CapsuleCast(pointUp, pointDown, coll.radius, velocity.normalized, out capsuleRaycast, maxSpeed, collisionMask);
 
-        float turnDot = Vector3.Dot(direction, velocityOnGround.normalized);
+        //Vector3 velocityOnGround = Vector3.ProjectOnPlane(velocity, capsuleRaycast.normal);
 
-        if (velocityOnGround.magnitude > 0.001f && turnDot < 0.9f)
-        {
-            Velocity += Vector3.ClampMagnitude(direction, 1.0f) * 10 * acceleration * Time.deltaTime;
-        }
-        else
-        {
-            Velocity += Vector3.ClampMagnitude(direction, 1.0f) * acceleration * Time.deltaTime;
-        }
+        //float turnDot = Vector3.Dot(direction, velocityOnGround.normalized);
+
+        //if (velocityOnGround.magnitude > 0.001f && turnDot < 0.9f)
+        //{
+        //    velocity += Vector3.ClampMagnitude(direction, 1.0f) * 10 * acceleration * Time.deltaTime;
+        //}
+        //else
+        //{
+        //    velocity += Vector3.ClampMagnitude(direction, 1.0f) * acceleration * Time.deltaTime;
+        //}
 
 
-        if (Velocity.magnitude > maxSpeed)
-        {
-            Velocity = Vector3.ClampMagnitude(new Vector3(Velocity.x, 0.0f, Velocity.z), maxSpeed) + Vector3.ClampMagnitude(new Vector3(0.0f, Velocity.y, 0.0f), 5.0f);
-        }
-        Position.rotation = Quaternion.Euler(direction.x, 0f, 0f);
+        //if (velocity.magnitude > maxSpeed)
+        //{
+        //    velocity = Vector3.ClampMagnitude(new Vector3(velocity.x, 0.0f, velocity.z), maxSpeed) + Vector3.ClampMagnitude(new Vector3(0.0f, velocity.y, 0.0f), 5.0f);
+        //}
+        //transform.rotation = Quaternion.Euler(direction.x, 0f, 0f);
 
-        
+
+
+        Velocity = direction.normalized * maxSpeed;
+
+
+
         
     }
 
@@ -243,9 +223,9 @@ public class PlayerBaseState : MonoBehaviour
     /// <returns></returns>
     public bool Grounded()
     {
-        Vector3 pointUp = Position.position + CapsuleCollider.center + Vector3.up * (CapsuleCollider.height / 6 - CapsuleCollider.radius);
-        Vector3 pointDown = Position.position + CapsuleCollider.center + Vector3.down * (CapsuleCollider.height / 6 - CapsuleCollider.radius);
-        if (Physics.CapsuleCast(pointUp, pointDown, CapsuleCollider.radius, Vector3.down, out capsuleRaycast, (0.5f + skinWidth), CollisionMask)) // ändrade 0,8 till 0,6
+        Vector3 pointUp = transform.position + coll.center + Vector3.up * (coll.height / 2 - coll.radius);
+        Vector3 pointDown = transform.position + coll.center + Vector3.down * (coll.height / 2 - coll.radius);
+        if (Physics.CapsuleCast(pointUp, pointDown, coll.radius, Vector3.down, out capsuleRaycast, (0.05f + skinWidth), collisionMask)) // ändrade 0,8 till 0,6
         {
             return true;
         }
@@ -273,9 +253,9 @@ public class PlayerBaseState : MonoBehaviour
     /// <returns></returns>
     public Vector3 GroundedNormal()
     {
-        Vector3 pointUp = Position.position + CapsuleCollider.center + Vector3.up * (CapsuleCollider.height / 6 - CapsuleCollider.radius);
-        Vector3 pointDown = Position.position + CapsuleCollider.center + Vector3.down * (CapsuleCollider.height / 6 - CapsuleCollider.radius);
-        if (Physics.CapsuleCast(pointUp, pointDown, CapsuleCollider.radius, Vector3.down, out capsuleRaycast, (0.5f + skinWidth), CollisionMask))
+        Vector3 pointUp = transform.position + coll.center + Vector3.up * (coll.height / 2 - coll.radius);
+        Vector3 pointDown = transform.position + coll.center + Vector3.down * (coll.height / 2 - coll.radius);
+        if (Physics.CapsuleCast(pointUp, pointDown, coll.radius, Vector3.down, out capsuleRaycast, (0.5f + skinWidth), collisionMask))
         {
             return capsuleRaycast.normal;
         }
@@ -286,11 +266,6 @@ public class PlayerBaseState : MonoBehaviour
     }
 
     /// <summary>
-    /// Respawns the player if killed.
-    /// </summary>
- 
-
-    /// <summary>
     /// Applies friction to the player in order to slow down movement.
     /// </summary>
     /// <param name="normalForceMagnitude"></param>
@@ -298,12 +273,12 @@ public class PlayerBaseState : MonoBehaviour
     {
 
         RaycastHit collision;
-        Vector3 point1 = transform.position + CapsuleCollider.center + Vector3.up * (CapsuleCollider.height / 2 - CapsuleCollider.radius);
-        Vector3 point2 = transform.position + CapsuleCollider.center + Vector3.down * (CapsuleCollider.height / 2 - CapsuleCollider.radius);
+        Vector3 point1 = transform.position + coll.center + Vector3.up * (coll.height / 2 - coll.radius);
+        Vector3 point2 = transform.position + coll.center + Vector3.down * (coll.height / 2 - coll.radius);
 
 
 
-        if (Physics.CapsuleCast(point1, point2, CapsuleCollider.radius, Vector3.down, out collision, skinWidth * 5, CollisionMask))
+        if (Physics.CapsuleCast(point1, point2, coll.radius, Vector3.down, out collision, skinWidth * 5, collisionMask))
         {
             {
               
@@ -333,7 +308,7 @@ public class PlayerBaseState : MonoBehaviour
     /// </summary>
     public void CameraDirectionChanges()
     {
-        Direction = Camera.main.transform.rotation * new Vector3(HorizontalDirection, 0, VerticalDirection).normalized;
+        Direction = Camera.main.transform.rotation * new Vector3(horizontalDirection, 0, verticalDirection).normalized;
         //Direction = Vector3.ProjectOnPlane(Direction, GroundedNormal()).normalized;
     }
 
@@ -342,8 +317,8 @@ public class PlayerBaseState : MonoBehaviour
     /// </summary>
     public void MovementInput()
     {
-        VerticalDirection = Input.GetAxisRaw("Vertical");
-        HorizontalDirection = Input.GetAxisRaw("Horizontal");
+        verticalDirection = Input.GetAxisRaw("Vertical");
+        horizontalDirection = Input.GetAxisRaw("Horizontal");
 
     }
 
@@ -354,10 +329,10 @@ public class PlayerBaseState : MonoBehaviour
     {
 
         RaycastHit collision;
-        Vector3 point1 = transform.position + CapsuleCollider.center + Vector3.up * (CapsuleCollider.height / 2 - CapsuleCollider.radius);
-        Vector3 point2 = transform.position + CapsuleCollider.center + Vector3.down * (CapsuleCollider.height / 2 - CapsuleCollider.radius);
+        Vector3 point1 = transform.position + coll.center + Vector3.up * (coll.height / 2 - coll.radius);
+        Vector3 point2 = transform.position + coll.center + Vector3.down * (coll.height / 2 - coll.radius);
 
-        Physics.CapsuleCast(point1, point2, CapsuleCollider.radius, Vector3.down, out collision, topSpeed, CollisionMask);
+        Physics.CapsuleCast(point1, point2, coll.radius, Vector3.down, out collision, topSpeed, collisionMask);
 
         Direction = Vector3.ProjectOnPlane(Direction, collision.normal).normalized;
         
@@ -368,8 +343,8 @@ public class PlayerBaseState : MonoBehaviour
     /// </summary>
     public void ControlDirection()
     {
-        //Vector3 pointUp = Position.position + CapsuleCollider.center + Vector3.up * (CapsuleCollider.height / 6 - CapsuleCollider.radius);
-        //Vector3 pointDown = Position.position + CapsuleCollider.center + Vector3.down * (CapsuleCollider.height / 6 - CapsuleCollider.radius);
+        //Vector3 pointUp = Position.position + CapsuleCollider.center + Vector3.up * (CapsuleCollider.height / 2 - CapsuleCollider.radius);
+        //Vector3 pointDown = Position.position + CapsuleCollider.center + Vector3.down * (CapsuleCollider.height / 2 - CapsuleCollider.radius);
         //Physics.CapsuleCast(pointUp, pointDown, CapsuleCollider.radius, Vector3.down, out capsuleRaycast, topSpeed, CollisionMask);
 
         Vector3 projectedDirection = Vector3.ProjectOnPlane(Direction, capsuleRaycast.normal);

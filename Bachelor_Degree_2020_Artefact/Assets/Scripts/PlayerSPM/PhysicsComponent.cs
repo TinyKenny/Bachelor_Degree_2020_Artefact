@@ -2,14 +2,14 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-//Author: Hjalmar Andersson
-
+// This class was ripped from a previous project and has been slightly adapted to our current needs.
+// a lot of variables and methods are likely to be out of date
 public class PhysicsComponent : MonoBehaviour
 {
     public Vector3 Velocity { get { return velocity; } set { velocity = value; } }
 
     [SerializeField] private float staticFriction;
-    [SerializeField] private float dynamicFriction;
+    //[SerializeField] private float dynamicFriction;
     [SerializeField] private float airResistance;
     [SerializeField] private Vector3 velocity = new Vector2(0, 0); //vibbens fel, make this private! (and property)
 

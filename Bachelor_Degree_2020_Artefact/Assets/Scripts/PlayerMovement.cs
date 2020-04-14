@@ -31,17 +31,18 @@ public class PlayerMovement : MonoBehaviour
         if (characterController.isGrounded)
         {
             inputVector = new Vector3(Input.GetAxisRaw("Horizontal"), 0.0f, Input.GetAxisRaw("Vertical"));
+            //inputVector
 
-            //Vector3 topPoint = transform.position + characterController.center + Vector3.up * (characterController.height / 2 - characterController.radius) * 0.95f;
-            //Vector3 bottomPoint = transform.position + characterController.center - Vector3.up * (characterController.height / 2 - characterController.radius) * 0.95f;
+            Vector3 topPoint = transform.position + characterController.center + Vector3.up * (characterController.height / 2 - characterController.radius) * 0.95f;
+            Vector3 bottomPoint = transform.position + characterController.center - Vector3.up * (characterController.height / 2 - characterController.radius) * 0.95f;
 
-            //Physics.CapsuleCast(topPoint, bottomPoint, characterController.radius * 0.95f, Vector3.down, out RaycastHit raycastHit, Mathf.Infinity, ~0, QueryTriggerInteraction.Ignore);
+            Physics.CapsuleCast(topPoint, bottomPoint, characterController.radius * 0.95f, Vector3.down, out RaycastHit raycastHit, Mathf.Infinity, ~0, QueryTriggerInteraction.Ignore);
 
             //Debug.DrawLine(Vector3.zero, raycastHit.normal, Color.red, 1.0f);
             ////Debug.Log(raycastHit.normal);
 
-            //inputVector = Vector3.ProjectOnPlane(mainCameraTransform.rotation * inputVector, raycastHit.normal).normalized * inputVector.magnitude;
-            inputVector = Vector3.ProjectOnPlane(mainCameraTransform.rotation * inputVector, Vector3.up).normalized * inputVector.magnitude;
+            inputVector = Vector3.ProjectOnPlane(mainCameraTransform.rotation * inputVector, raycastHit.normal).normalized * inputVector.magnitude;
+            //inputVector = Vector3.ProjectOnPlane(mainCameraTransform.rotation * inputVector, Vector3.up).normalized * inputVector.magnitude;
 
             inputVector = Vector3.ClampMagnitude(inputVector, 1.0f) * movementSpeed;
 
@@ -50,10 +51,10 @@ public class PlayerMovement : MonoBehaviour
                 inputVector *= editorSprintMult;
             }
 
-            
+            //Debug.DrawLine(transform.position, transform.position + )
 
         }
-        inputVector += new Vector3(0.0f, gravity, 0.0f) * Time.deltaTime;
+        
 
         characterController.Move(inputVector * Time.deltaTime);
 
