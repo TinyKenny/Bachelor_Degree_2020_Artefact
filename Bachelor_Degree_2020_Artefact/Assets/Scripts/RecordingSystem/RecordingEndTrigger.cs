@@ -24,7 +24,7 @@ public class RecordingEndTrigger : MonoBehaviour
     {
         if (other.CompareTag("Player"))
         {
-            other.gameObject.SetActive(false);
+            //other.gameObject.SetActive(false);
             recorder?.StopRecording();
         }
     }

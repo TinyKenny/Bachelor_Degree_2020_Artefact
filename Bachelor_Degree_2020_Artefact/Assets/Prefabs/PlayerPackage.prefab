@@ -906,10 +906,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mazeTime: 0
+  playerCharacter: {fileID: 7405556414128559105}
   startTrigger: {fileID: 8709164819656625705}
   endTrigger: {fileID: 8709164819982958876}
   endCanvas: {fileID: 1070247587967936901}
   exitPromptText: {fileID: 9137944218319383615}
+  goalReachedText: {fileID: 8570759470362066655}
+  noTimeText: {fileID: 7355620630199742912}
 --- !u!1 &8709164820485619368
 GameObject:
   m_ObjectHideFlags: 0

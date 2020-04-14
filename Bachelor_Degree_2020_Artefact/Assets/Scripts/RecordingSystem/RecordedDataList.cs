@@ -50,6 +50,7 @@ public class RecordedDataList
     private RecordedData head;
     private RecordedData tail;
     private int nodeCount = 0;
+    private string dataPath = Application.dataPath;
 
     public static NumberFormatInfo GetNumberFormat()
     {
@@ -133,13 +134,13 @@ public class RecordedDataList
 
         if(currentNode == null)
         {
-            Debug.LogError("Cannot save recodring to file: head node of data recording is null");
+            Debug.LogError("Cannot save recording to file: head node of data recording is null");
             return;
         }
 
         NumberFormatInfo nfi = GetNumberFormat();
 
-        string filepath = Application.persistentDataPath + "/recording_";
+        string filepath = dataPath + "/recording_";
         int fileNumber = 0;
 
         while(File.Exists(filepath + fileNumber.ToString() + "." + GetFileExtension()))

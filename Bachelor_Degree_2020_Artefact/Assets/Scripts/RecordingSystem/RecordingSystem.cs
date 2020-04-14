@@ -10,16 +10,22 @@ public class RecordingSystem : MonoBehaviour
     //public Vector3 pos = Vector3.zero;
     //public Quaternion rot = Quaternion.identity;
 
+    [SerializeField] private PlayerBaseState playerCharacter = null;
     [SerializeField] private RecordingStartTrigger startTrigger = null;
     [SerializeField] private RecordingEndTrigger endTrigger = null;
     [SerializeField] private Canvas endCanvas = null;
     [SerializeField] private Text exitPromptText = null;
+    [SerializeField] private Text goalReachedText = null;
+    [SerializeField] private Text noTimeText = null;
 
     private bool isRecording = false;
     private Transform playerCameraTransform;
     private RecordedDataList dataList;
     private float nextTimeToRecord = 0.0f;
     private float timeBetweenRecords = 0.1f;
+    private float timeLimit = 1200.0f; // 20 minutes
+
+    private bool showPromptText = false;
 
     private void Awake()
     {
@@ -29,11 +35,11 @@ public class RecordingSystem : MonoBehaviour
         playerCameraTransform = Camera.main.transform;
         endCanvas.gameObject.SetActive(false);
         exitPromptText.gameObject.SetActive(false);
+        noTimeText.gameObject.SetActive(false);
     }
 
     public void StartRecording()
     {
-        //Debug.Log("Recodring should start now.");
         isRecording = true;
         mazeTime = 0.0f;
         nextTimeToRecord = 0.0f;
@@ -41,12 +47,10 @@ public class RecordingSystem : MonoBehaviour
 
     public void StopRecording()
     {
-        //Debug.Log("recodring should end now.");
+        playerCharacter.gameObject.SetActive(false);
         isRecording = false;
         endCanvas.gameObject.SetActive(true);
         
-        //dataList.SaveRecordingToFile();
-
         Thread thread = new Thread(SaveRecording);
         thread.Start();
     }
@@ -54,7 +58,7 @@ public class RecordingSystem : MonoBehaviour
     private void SaveRecording()
     {
         dataList.SaveRecordingToFile();
-        exitPromptText.gameObject.SetActive(true);
+        showPromptText = true;
     }
 
     void Update()
@@ -74,10 +78,24 @@ public class RecordingSystem : MonoBehaviour
 
                 nextTimeToRecord += timeBetweenRecords;
             }
+
+            if (mazeTime > timeLimit)
+            {
+                goalReachedText.gameObject.SetActive(true);
+                noTimeText.gameObject.SetActive(true);
+                //stop recording, remove player object
+
+            }
+
             mazeTime += Time.deltaTime;
+        }
+        else if (!exitPromptText.gameObject.activeSelf && showPromptText)
+        {
+            exitPromptText.gameObject.SetActive(true);
         }
         else if(exitPromptText.gameObject.activeSelf && Input.anyKeyDown)
         {
+            Debug.Log("quit game");
             Application.Quit(0);
         }
     }
