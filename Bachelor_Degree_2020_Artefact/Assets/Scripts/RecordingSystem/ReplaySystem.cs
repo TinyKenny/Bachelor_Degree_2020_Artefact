@@ -89,7 +89,7 @@ public class ReplaySystem : MonoBehaviour
                 Destroy(playerCameraController);
             }
 
-            PlayerMovement playerMovement = FindObjectOfType<PlayerMovement>();
+            PlayerBaseState playerMovement = FindObjectOfType<PlayerBaseState>();
             if (playerMovement != null)
             {
                 Destroy(playerMovement.gameObject);

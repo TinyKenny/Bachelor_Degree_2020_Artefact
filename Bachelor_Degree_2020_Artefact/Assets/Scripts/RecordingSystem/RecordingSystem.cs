@@ -61,7 +61,7 @@ public class RecordingSystem : MonoBehaviour
         showPromptText = true;
     }
 
-    void Update()
+    void LateUpdate()
     {
         if (isRecording)
         {
@@ -81,10 +81,10 @@ public class RecordingSystem : MonoBehaviour
 
             if (mazeTime > timeLimit)
             {
-                goalReachedText.gameObject.SetActive(true);
+                goalReachedText.gameObject.SetActive(false);
                 noTimeText.gameObject.SetActive(true);
                 //stop recording, remove player object
-
+                StopRecording();
             }
 
             mazeTime += Time.deltaTime;
