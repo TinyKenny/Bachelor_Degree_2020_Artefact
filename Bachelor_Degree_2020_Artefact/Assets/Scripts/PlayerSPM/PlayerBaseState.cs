@@ -33,11 +33,10 @@ public class PlayerBaseState : MonoBehaviour
     [SerializeField] private float frictionCoefficient = 0.95f;
     private float airFriction = 0.95f;
 
-    private float topSpeed = 8f;
     private float gravity = 6f;
     private float skinWidth = 0.05f;
     private float acceleration = 10f;
-    private float maxSpeed = 8f;
+    private float maxSpeed = 6.0f;
 
 
     private void Awake()
@@ -332,7 +331,7 @@ public class PlayerBaseState : MonoBehaviour
         Vector3 point1 = transform.position + coll.center + Vector3.up * (coll.height / 2 - coll.radius);
         Vector3 point2 = transform.position + coll.center + Vector3.down * (coll.height / 2 - coll.radius);
 
-        Physics.CapsuleCast(point1, point2, coll.radius, Vector3.down, out collision, topSpeed, collisionMask);
+        Physics.CapsuleCast(point1, point2, coll.radius, Vector3.down, out collision, maxSpeed, collisionMask);
 
         Direction = Vector3.ProjectOnPlane(Direction, collision.normal).normalized;
         
