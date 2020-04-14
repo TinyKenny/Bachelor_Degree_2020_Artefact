@@ -6040,11 +6040,6 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 4057056071632899280}
     m_Modifications:
-    - target: {fileID: 8356891749082410074, guid: 261342bcd154ed8428de4a3db86da2f8,
-        type: 3}
-      propertyPath: m_Name
-      value: Shifting elevation pattern 2
-      objectReference: {fileID: 0}
     - target: {fileID: 8356891749082410069, guid: 261342bcd154ed8428de4a3db86da2f8,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -6099,6 +6094,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8356891749082410074, guid: 261342bcd154ed8428de4a3db86da2f8,
+        type: 3}
+      propertyPath: m_Name
+      value: Shifting elevation pattern 2
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 261342bcd154ed8428de4a3db86da2f8, type: 3}

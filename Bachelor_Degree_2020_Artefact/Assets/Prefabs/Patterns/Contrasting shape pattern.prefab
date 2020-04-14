@@ -2169,7 +2169,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7478667303027047998}
   m_Layer: 0
-  m_Name: Contrasting shape pattern 2
+  m_Name: Contrasting shape pattern
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3141,6 +3141,12 @@ PrefabInstance:
       propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 0c2c13077ecdc7546adea9bed210109e, type: 2}
+    - target: {fileID: -5178661895559278292, guid: b44563e59c8b6324e9637fb8acadf2ab,
+        type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4068373912626513877, guid: e9755eaad57724c499edd164d8b13222,
+        type: 3}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b44563e59c8b6324e9637fb8acadf2ab, type: 3}
 --- !u!1 &1506591926327943114 stripped
