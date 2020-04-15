@@ -56,8 +56,8 @@ LightmapSettings:
   m_LightmapEditorSettings:
     serializedVersion: 12
     m_Resolution: 2
-    m_BakeResolution: 20
-    m_AtlasSize: 2048
+    m_BakeResolution: 30
+    m_AtlasSize: 1024
     m_AO: 0
     m_AOMaxDistance: 1
     m_CompAOExponent: 1
@@ -96,7 +96,7 @@ LightmapSettings:
     m_PVRFilteringAtrousPositionSigmaAO: 1
     m_ExportTrainingData: 0
     m_TrainingDataDestination: TrainingData
-  m_LightingDataAsset: {fileID: 112000000, guid: 576701fdf3188f14497cde957a8cd600,
+  m_LightingDataAsset: {fileID: 112000000, guid: 7dd46e410adfb9b469a9770ecca05f15,
     type: 2}
   m_UseShadowmask: 1
 --- !u!196 &4
