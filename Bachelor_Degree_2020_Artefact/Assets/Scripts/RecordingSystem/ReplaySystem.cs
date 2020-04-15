@@ -44,7 +44,7 @@ public class ReplaySystem : MonoBehaviour
 
     [SerializeField] private GameObject heatmapMarkerPrefab = null;
     [SerializeField] private GameObject replayActorPrefab = null;
-    [SerializeField] private Camera mainCamera = null;
+    /*[SerializeField] */private Camera mainCamera = null;
     [SerializeField] private Camera heatmapCamera = null;
 
     [HideInInspector]
@@ -83,6 +83,7 @@ public class ReplaySystem : MonoBehaviour
     {
         if (Application.isEditor)
         {
+            mainCamera = Camera.main;
             CameraController playerCameraController = mainCamera.GetComponent<CameraController>();
             if(playerCameraController != null)
             {
